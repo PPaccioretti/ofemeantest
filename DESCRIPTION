@@ -1,0 +1,31 @@
+Package: ofemeantest
+Type: Package
+Title: On Farm Experimentation Mean Test
+Version: 0.0.900
+Authors@R:
+    c(
+      person("Mariano", "Córdoba", email = "marianoacba@agro.unc.edu.ar", 
+             role = c("aut", "cre")),
+      person("Pablo", "Paccioretti", email = "pablopaccioretti@agro.unc.edu.ar", 
+             role = c("aut")),
+      person("Monica", "Balzarini", email = "mbalzari@agro.unc.edu.ar", 
+             role = c("aut"))
+    )
+Description: Permutation-based statistical method to support field-specific 
+    inferences from spatial data within the context of unreplicated OFE.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.3
+Imports: 
+    dplyr,
+    geostan,
+    ggplot2,
+    magrittr,
+    permuco,
+    sf,
+    spatialreg,
+    spdep,
+    withr
+Depends: 
+    R (>= 2.10)
