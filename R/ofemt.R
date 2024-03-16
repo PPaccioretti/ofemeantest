@@ -111,20 +111,20 @@ ofemt <- function(data,
 
   # shift
   if (!is.numeric(shift)) {
-    stop(paste0('shift (', head(shift), ') must be a number.'))
+    stop(paste0('shift (', utils::head(shift), ') must be a number.'))
   }
   if (length(shift) < 1 | length(shift) > 2) {
-    stop(paste0('shift (', head(shift), ') must be a vector of length 1 or 2.'))
+    stop(paste0('shift (', utils::head(shift), ') must be a vector of length 1 or 2.'))
   }
   # dim celda
   if (!is.numeric(cellsize)) {
-    stop(paste0('cellsize (', head(cellsize), ') must be a number.'))
+    stop(paste0('cellsize (', utils::head(cellsize), ') must be a number.'))
   }
   #length(cellsize) mus be 1 or 2
   if (length(cellsize) < 1 | length(cellsize) > 2) {
     stop(paste0(
       'cellsize (',
-      head(cellsize),
+      utils::head(cellsize),
       ') must be a vector of length 1 or 2.'
     ))
   }
@@ -145,7 +145,7 @@ ofemt <- function(data,
   }
 
   if (!is.numeric(n_p)) {
-    stop(paste0('n_p (', head(n_p), ') must be a number.'))
+    stop(paste0('n_p (', utils::head(n_p), ') must be a number.'))
   }
   if (n_p <= 0) {
     stop(paste0('n_p (', n_p, ') must be a positive number.'))
@@ -154,7 +154,7 @@ ofemt <- function(data,
   raw_data <- data
 
   # Removes spaces in tratment variable
-  data$gvar <- gsub(" ", ".", data[[x]])
+  data[['gvar']] <- gsub(" ", ".", data[[x]])
 
   treatments <- length(unique(data$gvar))
 
@@ -189,7 +189,7 @@ ofemt <- function(data,
                 left = FALSE)
 
 
-  my_unique_n <- aggregate(datos$gvar,
+  my_unique_n <- stats::aggregate(datos$gvar,
                            by = list("IDcelda" = datos$IDcelda),
                            function(x) {
                              c(length(unique(x)),
@@ -200,7 +200,7 @@ ofemt <- function(data,
                            }, simplify = TRUE)
   my_unique_n <- do.call(data.frame, my_unique_n)
   my_unique_n <-
-    setNames(my_unique_n, c("IDcelda", "unique_trat", "trat", "n"))
+    stats::setNames(my_unique_n, c("IDcelda", "unique_trat", "trat", "n"))
 
 
   my_row_to_keep <-
@@ -258,7 +258,7 @@ ofemt <- function(data,
 
 
 
-  compar <- combn(unique(data$gvar), 2, simplify = TRUE)
+  compar <- utils::combn(unique(data$gvar), 2, simplify = TRUE)
 
   variables <- c(y, "X", "Y")
 
@@ -267,7 +267,7 @@ ofemt <- function(data,
     data.frame(sf::st_coordinates(datos_celda_sel),
                sf::st_drop_geometry(datos_celda_sel))  %>%
     dplyr::group_by(gvar, IDcelda) %>%
-    dplyr::summarise_at(variables, median) %>%
+    dplyr::summarise_at(variables, stats::median) %>%
     dplyr::ungroup()
 
   datos_celda_sel_mediana <-
@@ -275,12 +275,12 @@ ofemt <- function(data,
                      unique(sf::st_drop_geometry(datos_celda_sel[, c("IDcelda", "gvar", x)])),
                      by = c("IDcelda", "gvar"))
 
-  my_model <- lm(as.formula(paste(y,
+  my_model <- stats::lm(stats::as.formula(paste(y,
                                   paste(x, collapse = " + "),
                                   sep = " ~ ")),
                  data = datos_celda_sel_mediana)
   datos_celda_sel_mediana$residuos <-
-    aov(my_model)[['residuals']]
+    stats::aov(my_model)[['residuals']]
 
   datos_celda_sel_mediana <-
     sf::st_as_sf(
@@ -345,7 +345,7 @@ ofemt <- function(data,
         base_permutacion[base_permutacion$gvar %in% compar[,x_compar],]
       suppressWarnings(
         tabla_permt_parcial_2 <-
-          permuco::aovperm(as.formula(paste(y, x, sep = "~")),
+          permuco::aovperm(stats::as.formula(paste(y, x, sep = "~")),
                            data = tabla_permt_parcial,
                            np = n_p)
       )

@@ -20,8 +20,8 @@ RoxygenNote: 7.2.3
 Imports: 
     dplyr,
     geostan,
-    ggplot2,
     magrittr,
+    multcompView,
     permuco,
     sf,
     spatialreg,
