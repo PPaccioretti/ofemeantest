@@ -21,8 +21,8 @@ pak::pkg_install("PPaccioretti/ofemeantest")
 The example dataset comprised a field trial of corn (Zea mays L.), where
 the impact of broadcast phosphorus fertilization was evaluated. The
 treatment strip received superphosphate at rates ranging from 250 to 500
-$kg~ha^{–1}$ \[0-21-0\], while the control strip received no P
-fertilizer (0 $kg~ha^{–1}$). Each strip was 2.2 ha in area, totaling 100
+$kg.ha^{–1}$ \[0-21-0\], while the control strip received no P
+fertilizer (0 $kg.ha^{–1}$). Each strip was 2.2 ha in area, totaling 100
 ha. Raw grain yield monitor data for each each single strip were cleaned
 following the protocol proposed by Vega et al. (2019).
 
@@ -92,8 +92,8 @@ the ESS was 97, with a magnitude of autocorrelation (Rho) of 0.65. The
 fertilization treatment showed significant differences compared to the
 control (p \< 0.05).
 
-The average yield of the fertilized strip was 5.28 $t~ha^{-1}$, while
-that of the control was 4.76 $t~ha^{-1}$.
+The average yield of the fertilized strip was 5.28 $t.ha^{-1}$, while
+that of the control was 4.76 $t.ha^{-1}$.
 
 ## References
 
