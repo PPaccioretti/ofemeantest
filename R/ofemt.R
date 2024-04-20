@@ -252,17 +252,10 @@ ofemt <- function(data,
   #   print(plot1 + plot2)
   #
   # }
-
-
-  #browser()
-
-
-
   compar <- utils::combn(unique(data$gvar), 2, simplify = TRUE)
 
   variables <- c(y, "X", "Y")
 
-  # Que diferencia hay aquii!?!?!? ----
   datos_celda_sel_mediana <-
     data.frame(sf::st_coordinates(datos_celda_sel),
                sf::st_drop_geometry(datos_celda_sel))  %>%
@@ -312,7 +305,7 @@ ofemt <- function(data,
 
   # Magnitud de la autocorrelacion espacial de los residuos
   rho <- spatialreg::aple(datos_celda_sel_mediana$residuos, lw)
-  IM <-
+  MI <-
     spdep::moran.test(datos_celda_sel_mediana$residuos, lw)[[3]][[1]]
   n <- nrow(datos_celda_sel_mediana)
   ess <-  round(geostan::n_eff(rho = rho, n = n), 0)
@@ -321,7 +314,7 @@ ofemt <- function(data,
     "n" = n,
     "ESS" = ess,
     "Rho" = rho,
-    "IM" = IM
+    "MI" = MI
   )
 
 
@@ -473,8 +466,8 @@ ofemt <- function(data,
     data.frame(
       "Cellsize" = paste(cellsize, collapse = "_"),
       "Min.Obs/Cell" = nmin_cell,
-      "Max.Obs/Cell" = max(my_IDcelda_keeped$n),
-      "Median.Obs/Cell" = median(my_IDcelda_keeped$n),
+      "Max.Obs/Cell" = max(as.numeric(my_IDcelda_keeped$n)),
+      "Median.Obs/Cell" = median(as.numeric(my_IDcelda_keeped$n)),
       tablamuestra
     )
   resultadotabla <-
