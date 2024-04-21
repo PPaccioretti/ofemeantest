@@ -48,8 +48,8 @@
 #'
 #' @return a list of length 4 with mean test comparisson results
 #'
-#' @references A proposed method to compare treatments in unreplicated
-#' agricultural field trials with georeferenced data. Córdoba M.,
+#' @references A new method to compare
+#' treatments in unreplicated on-farm experimentation. Córdoba M.,
 #' Paccioretti P.,Balzarini M. Under review.
 #'
 #' @importFrom magrittr %>%
