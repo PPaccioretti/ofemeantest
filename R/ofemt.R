@@ -50,7 +50,7 @@
 #'
 #' @references A new method to compare
 #' treatments in unreplicated on-farm experimentation. Córdoba M.,
-#' Paccioretti P.,Balzarini M. Under review.
+#' Paccioretti P., Balzarini M. Under review.
 #'
 #' @importFrom magrittr %>%
 #' @export
@@ -220,38 +220,9 @@ ofemt <- function(data,
 
 
   datos_celda_sel <- subset(datos,
-                            datos[["IDcelda"]] %in% my_IDcelda_keeped[["IDcelda"]])#datos#merge(datos, my_unique_n, by = "IDcelda")
+                            datos[["IDcelda"]] %in% my_IDcelda_keeped[["IDcelda"]])
 
 
-  # if (plot_grilla == T) {
-  #   # set.seed(semilla)
-  #   plot1 <-
-  #     #mapview::mapview(grid3, alpha.regions = 0, layer.name = "Grilla") +
-  #     mapview::mapview(
-  #       datos,
-  #       #col.regions = RColorBrewer::brewer.pal(n = treatments, name = "Set3"),
-  #       zcol = "gvar",
-  #       cex = 4,
-  #       alpha = 0,
-  #       layer.name = "Data"
-  #     )
-  #
-  #   # mapview::mapviewGetOption("vector.palette")
-  #
-  #   gridsel <-
-  #     subset(grid3, grid3$IDcelda %in% datos_celda_sel$IDcelda)
-  #
-  #   plot2 <-  mapview::mapview(
-  #     gridsel,
-  #     color = "blue",
-  #     cex = 4,
-  #     alpha.regions = 0,
-  #     layer.name = "Selected cells"
-  #   )
-  #
-  #   print(plot1 + plot2)
-  #
-  # }
   compar <- utils::combn(unique(data$gvar), 2, simplify = TRUE)
 
   variables <- c(y, "X", "Y")
@@ -363,25 +334,6 @@ ofemt <- function(data,
     withr::with_seed(7,
                      do.call(rbind, lapply(seq_len(n_s), multipermutacion)))
 
-
-  #write.table(resultadosmultipermutacion, paste0(getwd(),"/",field,"Valores_p_",y,"_",x,".txt"))
-
-  # # Histograma p valor
-  # plotpvalor <-
-  #   ggplot2::ggplot(
-  #     resultadosmultipermutacion,
-  #     ggplot2::aes(x = p.valor,
-  #                  fill = Comparison,
-  #                  colour = Comparison)
-  #   ) +
-  #   ggplot2::geom_histogram(alpha = 0.5, position = "identity") +
-  #   ggplot2::labs(y = "Absolute Frecuency", x = "p-value") +
-  #   ggplot2::facet_wrap(~ Comparison) +
-  #   ggplot2::xlim(0, 1) +
-  #   ggplot2::ylim(0, 50)
-
-
-
   # Medias p valor multi permutaciones
   medias_resultadosmultipermutacion <-
     resultadosmultipermutacion  %>%
@@ -433,34 +385,8 @@ ofemt <- function(data,
   diffpermutacion_letras <-
     diffpermutacion_letras[order(diffpermutacion_letras[[y]], decreasing = TRUE), ]
 
-  # plotcomparacion <-
-  #   ggplot2::ggplot(diffpermutacion_letras, ggplot2::aes(x = reorder(.data[[x]], .data[[y]]), y =
-  #                                                          .data[[y]])) +
-  #   ggplot2::geom_bar(
-  #     width = 0.5,
-  #     stat = "identity",
-  #     color = "black",
-  #     position = ggplot2::position_dodge(width = 0.8),
-  #   ) +
-  #   ggplot2::geom_text(
-  #     ggplot2::aes(
-  #       x = reorder(.data[[x]], .data[[y]]),
-  #       y = .data[[y]] ,
-  #       label = as.matrix(letters)
-  #     ),
-  #     position = ggplot2::position_dodge(width = 0.8),
-  #     vjust = -(0.5),
-  #     size = 5
-  #   ) +
-  #   ggplot2::labs(x = xlab,
-  #                 y = ylab) +
-  #   ggplot2::theme(text = ggplot2::element_text(size = 15))
-
-  # print(plotcomparacion)
-
   colnames(diffpermutacion_letras)[colnames(diffpermutacion_letras) == y] <-
     paste(y, 'mean', sep = '_')
-  #browser()
 
   infogral <-
     data.frame(
