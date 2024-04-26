@@ -189,15 +189,17 @@ ofemt <- function(data,
                 left = FALSE)
 
 
-  my_unique_n <- stats::aggregate(datos$gvar,
-                           by = list("IDcelda" = datos$IDcelda),
-                           function(x) {
-                             c(length(unique(x)),
-                               ifelse(length(unique(x)) == 1,
-                                      unique(x),
-                                      NA),
-                               length(x))
-                           }, simplify = TRUE)
+  my_unique_n <-
+    stats::aggregate(
+      datos$gvar,
+      by = list("IDcelda" = datos$IDcelda),
+      function(x) {
+        c(length(unique(x)),
+          ifelse(length(unique(x)) == 1,
+                 unique(x),
+                 NA),
+          length(x))
+      }, simplify = TRUE)
   my_unique_n <- do.call(data.frame, my_unique_n)
   my_unique_n <-
     stats::setNames(my_unique_n, c("IDcelda", "unique_trat", "trat", "n"))
@@ -279,7 +281,8 @@ ofemt <- function(data,
   MI <-
     spdep::moran.test(datos_celda_sel_mediana$residuos, lw)[[3]][[1]]
   n <- nrow(datos_celda_sel_mediana)
-  ess <-  round(geostan::n_eff(rho = rho, n = n), 0)
+  my_rho <- geostan::n_eff(rho = rho, n = n)
+  ess <-  ifelse(my_rho < 0, 0, round(my_rho, 0))
 
   tablamuestra <- data.frame(
     "n" = n,
