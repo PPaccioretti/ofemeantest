@@ -87,7 +87,7 @@ ofemt(data = ofe_f2,
 
 }
 \references{
-A proposed method to compare treatments in unreplicated
-agricultural field trials with georeferenced data. Córdoba M.,
-Paccioretti P.,Balzarini M. Under review.
+A new method to compare
+treatments in unreplicated on-farm experimentation. Córdoba M.,
+Paccioretti P., Balzarini M. Under review.
 }

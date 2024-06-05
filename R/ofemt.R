@@ -281,7 +281,7 @@ ofemt <- function(data,
   MI <-
     spdep::moran.test(datos_celda_sel_mediana$residuos, lw)[[3]][[1]]
   n <- nrow(datos_celda_sel_mediana)
-  my_rho <- geostan::n_eff(rho = rho, n = n)
+  my_rho <- n_eff(rho = rho, n = n)
   ess <-  ifelse(my_rho < 0, 0, round(my_rho, 0))
 
   tablamuestra <- data.frame(
@@ -296,7 +296,7 @@ ofemt <- function(data,
   medias_tratamientos <-
     sf::st_drop_geometry(datos_celda_sel_mediana)  %>%
     dplyr::group_by_at(x) %>%
-    dplyr::summarize_at(y, median)
+    dplyr::summarize_at(y, stats::median)
 
 
   # Permutacion multiple
@@ -407,4 +407,37 @@ ofemt <- function(data,
       "Means comparison" = diffpermutacion_letras
     )
   resultadotabla
+}
+
+
+
+
+
+
+#' Effective sample size
+#'
+#' @description An approximate calculation for the effective sample size for
+#' spatially autocorrelated data. Only valid for approximately normally
+#' distributed data.
+#'
+#' @param n Number of observations.
+#' @param rho Spatial autocorrelation parameter from a simultaneous
+#' autoregressive model.
+#'
+#' @return Returns effective sample size n*, a numeric value.
+#'
+#' @details
+#'
+#' Implements Equation 3 from Griffith (2005).
+#'
+#' @source
+#'
+#' Griffith, Daniel A. (2005). Effective geographic sample size in the presence of spatial autocorrelation. Annals of the Association of American Geographers. Vol. 95(4): 740-760.
+#'
+n_eff <- function (n, rho) {
+  a <- 1 / (1 - exp(-1.92369))
+  b <- (n - 1) / n
+  c <- (1 - exp(-2.12373 * rho + 0.20024 * sqrt(rho)))
+  n_eff <- n * (1 - a * b * c)
+  return(n_eff)
 }
