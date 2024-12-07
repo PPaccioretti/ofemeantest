@@ -278,11 +278,14 @@ ofemt <- function(data,
 
   # Magnitud de la autocorrelacion espacial de los residuos
   rho <- spatialreg::aple(datos_celda_sel_mediana$residuos, lw)
+  # rho <-  ifelse(rho < 0, 0, rho)
+  # Constrain to [0, 1]
+  rho <- min(1, max(0, rho))
   MI <-
     spdep::moran.test(datos_celda_sel_mediana$residuos, lw)[[3]][[1]]
   n <- nrow(datos_celda_sel_mediana)
-  my_rho <- n_eff(rho = rho, n = n)
-  ess <-  ifelse(my_rho < 0, 0, round(my_rho, 0))
+  my_n_eff <- n_eff(rho = rho, n = n)
+  ess <- round(my_n_eff, 0)
 
   tablamuestra <- data.frame(
     "n" = n,
