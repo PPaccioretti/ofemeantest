@@ -2,92 +2,71 @@
 % Please edit documentation in R/ofemt.R
 \name{ofemt}
 \alias{ofemt}
-\title{Method to compare treatments in unreplicated agricultural field trials
-with georeferenced data}
+\title{OFE permutation analysis}
 \usage{
 ofemt(
   data,
   y,
   x,
   cellsize = 10,
-  nmin_cell = 4,
+  min_per_cell = 4,
+  nmin_cell = NULL,
   n_p = 1000,
   n_s = 200,
   alpha = 0.05,
-  shift = 0,
-  alpha_bonferroni = FALSE,
+  shift = c(0, 0),
+  p_adjust_method = c("none", "bonferroni", "holm", "BH"),
   crs = NULL,
-  ...
+  keep_components = c("none", "light", "full"),
+  grid = NULL,
+  angle_deg = 0,
+  buffer = 0,
+  alpha_bonferroni = NULL
 )
 }
 \arguments{
-\item{data}{an \code{sf} object with projected coordinates. If the object
-geometries are in geographical coordinates, a valid \code{crs} must be specified.}
+\item{data}{sf points; must contain columns `y` and `x`.}
 
-\item{y}{character of length 1; specifying \code{data} column name containing
-(numeric) response variable.}
+\item{y}{response column (numeric).}
 
-\item{x}{character of length 1; specifying \code{data} column name containing
-(character or factor) classification variable (treatments to compare).}
+\item{x}{treatment column (factor/character).}
 
-\item{cellsize}{numeric of length 1 or 2 with target cell size. Argument
-passed to \code{\link[sf]{st_make_grid}}.}
+\item{cellsize, shift, angle_deg, buffer, min_per_cell}{grid settings (used when `grid` is NULL).}
 
-\item{nmin_cell}{numeric of length 1; specifying minimum number of data points
-that accommodate each grid cell.}
+\item{nmin_cell, alpha_bonferroni}{**Deprecated.**
+Use `min_per_cell` instead of `nmin_cell`, and `p_adjust_method = "bonferroni"`
+instead of `alpha_bonferroni`.}
 
-\item{n_p}{numeric positive value specifying the number of permutations.}
+\item{n_p}{number of permutations per ANOVA run.}
 
-\item{n_s}{numeric positive value specifying the number of random
-samples of grid cells to carry out perumational ANOVAs.}
+\item{n_s}{number of sampling runs.}
 
-\item{alpha}{numeric of length 1, alpha value (between 0 and 1) for meant test.}
+\item{alpha}{significance threshold for letters.}
 
-\item{shift}{numeric of length 1 or 2; specifying shift from lower.
-left corner coordinates (x, y) of \code{data}.}
+\item{p_adjust_method}{p-value adjustment method across pairwise comparisons.}
 
-\item{alpha_bonferroni}{logical specifying if p-value must be adjusted using
-Bonferroni correction for multiple comparisons.}
+\item{crs}{optional target projected CRS if `data` is in lon/lat.}
 
-\item{crs}{coordinate reference system: integer with the EPSG code,
-or character with proj4string to convert coordinates if \code{data} has
-longitude/latitude data.}
+\item{keep_components}{`"none"`, `"light"`, or `"full"` to embed geometries in output.}
 
-\item{...}{additional argument for \code{\link[sf]{st_make_grid}}.}
+\item{grid}{optional: an `ofe_grid`, a list with `grid_sel`, or an `sf` object of polygons.}
 }
 \value{
-a list of length 4 with mean test comparisson results
+An object of class `ofemt_result`.
 }
 \description{
-Approach to statistically analyze unreplicated OFE to promote field-specific
-inference of treatment effects. Statistical tools for spatial data are
-coupled with permutation tests to determine the statistical significance
-between treatment means.
+Runs a cell-based OFE analysis with permutation ANOVA and spatial diagnostics.
 }
 \details{
-The methodology involves:
-\enumerate{
-  \item calculation of effective sample size (ESS) given the underlying spatial
-structure.
-  \item ANOVA permutation test on a random sample of ESS.
-  \item generation of the empirical distribution of p-values from repetition of
-step two. The median of this empirical distribution is regarded as the
-p-value associated with the non-treatment effect hypothesis.
-}
-The test can be easily extended to cover scenarios with more than two
-treatments by employing pairwise comparisons of OFE across multiple
-treatments, with p-values can be adjusted for multiplicity
-using Bonferroni correction
+Both `nmin_cell` and `alpha_bonferroni` are retained for backward compatibility
+but will be removed in a future release.
+Use `min_per_cell` to define the minimum number of observations per grid cell,
+and control Bonferroni correction through the argument `p_adjust_method`.
 }
 \examples{
-data("ofe_f2", package = "ofemeantest")
-ofemt(data = ofe_f2,
-      y = "Yield_tn",
-      x = "Treatment")
-
+\dontrun{
+  my_data <- ofe_f2
+  res <- ofemt(my_data, y = "Yield", x = "Treatment",
+               cellsize = 10, min_per_cell = 4, alpha = 0.05)
 }
-\references{
-A proposed method to compare treatments in unreplicated
-agricultural field trials with georeferenced data. Córdoba M.,
-Paccioretti P.,Balzarini M. Under review.
 }
