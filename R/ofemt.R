@@ -21,10 +21,28 @@
 #' @export
 #'
 #' @details
-#' Both `nmin_cell` and `alpha_bonferroni` are retained for backward compatibility
-#' but will be removed in a future release.
-#' Use `min_per_cell` to define the minimum number of observations per grid cell,
-#' and control Bonferroni correction through the argument `p_adjust_method`.
+#' The methodology involves:
+#' \enumerate{
+#'   \item calculation of effective sample size (ESS) given the underlying spatial
+#' structure.
+#'   \item ANOVA permutation test on a random sample of ESS.
+#'   \item generation of the empirical distribution of p-values from repetition of
+#' step two. The median of this empirical distribution is regarded as the
+#' p-value associated with the non-treatment effect hypothesis.
+#' }
+#' The test can be easily extended to cover scenarios with more than two
+#' treatments by employing pairwise comparisons of OFE across multiple
+#' treatments, with p-values can be adjusted for multiplicity
+#' using Bonferroni correction
+#'
+#' @return a list of length 4 with mean test comparisson results
+#'
+#' @references A new method to compare
+#' treatments in unreplicated on-farm experimentation. Córdoba M.,
+#' Paccioretti P., Balzarini M. Under review.
+#'
+#' @importFrom magrittr %>%
+#' @export
 #'
 #' @examples
 #' \dontrun{
@@ -187,224 +205,263 @@ ofemt <- function(
   # # join points to cells
   jdat <- sf::st_join(data, grid, join = sf::st_intersects, left = FALSE)
 
-  # tmp <- stats::aggregate(
-  #   jdat$.trt,
-  #   by = list(CellID = jdat$CellID),
-  #   FUN = function(z) {
-  #     c(
-  #       n_trt = length(unique(z)),
-  #       trt = ifelse(length(unique(z)) == 1, unique(z), NA),
-  #       n = length(z)
-  #     )
-  #   }
-  # )
-  # tmp <- do.call(data.frame, tmp)
-  # names(tmp) <- c("CellID", "unique_trt", "trt", "n")
+  my_unique_n <-
+    stats::aggregate(
+      datos$gvar,
+      by = list("IDcelda" = datos$IDcelda),
+      function(x) {
+        c(
+          length(unique(x)),
+          ifelse(length(unique(x)) == 1, unique(x), NA),
+          length(x)
+        )
+      },
+      simplify = TRUE
+    )
+  my_unique_n <- do.call(data.frame, my_unique_n)
+  my_unique_n <-
+    stats::setNames(my_unique_n, c("IDcelda", "unique_trat", "trat", "n"))
 
-  # # eligibility: if min already applied upstream, only require 1 unique trt
-  # eligible <- tmp$unique_trt == 1
-  # # if (isFALSE(min_applied)) {
-  # #   tmp$unique_trt == 1
-  # # } else {
-  # #   tmp$unique_trt == 1 & tmp$n >= min_per_cell
-  # # }
-  # if (!any(eligible)) {
-  #   stop(
-  #     "No eligible cells (no single treatment per cell)."
-  #   )
-  # }
-  # keep_cells <- tmp[eligible, , drop = FALSE]
-  # jdat_keep <- subset(jdat, jdat$CellID %in% keep_cells$CellID)
+  my_row_to_keep <-
+    my_unique_n$unique_trat == 1 & my_unique_n$n >= nmin_cell
 
-  # per-cell medians (y, coords)
-  coord_df <- data.frame(
-    sf::st_coordinates(jdat),
-    sf::st_drop_geometry(jdat)
+  my_IDcelda_keeped <- my_unique_n[my_row_to_keep, ]
+
+  # if all are FALSE (!TRUE)
+  if (all(!my_row_to_keep)) {
+    stop(paste0(
+      'No cells with more than nmin_cell (',
+      nmin_cell,
+      ') observations.'
+    ))
+  }
+
+  datos_celda_sel <- subset(
+    datos,
+    datos[["IDcelda"]] %in% my_IDcelda_keeped[["IDcelda"]]
   )
-  vars <- c(y, "X", "Y")
-  suppressWarnings({
-    med_cell <-
-      coord_df |>
-      dplyr::group_by(.data$.trt, .data$CellID) |>
-      dplyr::summarise(
-        dplyr::across(dplyr::all_of(vars), ~ stats::median(.x, na.rm = TRUE)),
-        .groups = "drop"
-      )
+
+  compar <- utils::combn(unique(data$gvar), 2, simplify = TRUE)
+
+  variables <- c(y, "X", "Y")
+
+  datos_celda_sel_mediana <-
+    data.frame(
+      sf::st_coordinates(datos_celda_sel),
+      sf::st_drop_geometry(datos_celda_sel)
+    ) %>%
+    dplyr::group_by(gvar, IDcelda) %>%
+    dplyr::summarise_at(variables, stats::median) %>%
+    dplyr::ungroup()
+
+  datos_celda_sel_mediana <-
+    dplyr::left_join(
+      datos_celda_sel_mediana,
+      unique(sf::st_drop_geometry(datos_celda_sel[, c("IDcelda", "gvar", x)])),
+      by = c("IDcelda", "gvar")
+    )
+
+  my_model <- stats::lm(
+    stats::as.formula(paste(y, paste(x, collapse = " + "), sep = " ~ ")),
+    data = datos_celda_sel_mediana
+  )
+  datos_celda_sel_mediana$residuos <-
+    stats::aov(my_model)[['residuals']]
+
+  datos_celda_sel_mediana <-
+    sf::st_as_sf(
+      datos_celda_sel_mediana,
+      coords = c("X", "Y"),
+      crs = sf::st_crs(datos_celda_sel)
+    )
+
+  # Matriz de vecinos
+  k1 <- spdep::knn2nb(spdep::knearneigh(datos_celda_sel_mediana))
+  # Minima distancia para asegurarse de tener un dato vecino.
+  dmax <- max(unlist(spdep::nbdists(k1, datos_celda_sel_mediana)))
+  # Armado de grilla
+  gri <- spdep::dnearneigh(datos_celda_sel_mediana, 0, dmax)
+  dist <- spdep::nbdists(gri, datos_celda_sel_mediana)
+  # peso de vecino ponderado por la distancia
+  fdist <- lapply(dist, function(x) {
+    1 / (x / dmax)
   })
-  med_cell <- dplyr::left_join(
-    med_cell,
-    unique(sf::st_drop_geometry(jdat[, c("CellID", ".trt", x)])),
-    by = c("CellID", ".trt")
-  )
-
-  # model + spatial autocorr (keep spdep warnings untouched)
-  fml <- stats::as.formula(paste(y, x, sep = " ~ "))
-  fit <- stats::lm(fml, data = med_cell)
-  med_cell$resid <- stats::residuals(fit)
-
-  pts <- sf::st_as_sf(med_cell, coords = c("X", "Y"), crs = sf::st_crs(data))
-  k1 <-
-    suppressWarnings(
-      spdep::knn2nb(spdep::knearneigh(sf::st_coordinates(
-        pts
-      )))
-    )
-  dmax <- max(unlist(spdep::nbdists(k1, sf::st_coordinates(pts))))
-  nb <-
-    suppressWarnings(
-      spdep::dnearneigh(sf::st_coordinates(pts), 0, dmax)
-    )
-  dlist <- spdep::nbdists(nb, sf::st_coordinates(pts))
-  glist <- lapply(dlist, function(x) 1 / (x / dmax))
-  lw <- spdep::nb2listw(nb, glist = glist, style = "W", zero.policy = TRUE)
-
-  MI <- spdep::moran.test(med_cell$resid, lw, zero.policy = TRUE)$estimate[[
-    "Moran I statistic"
-  ]]
-  rho <- spatialreg::aple(med_cell$resid, lw)
-  rho <- min(1, max(0, rho))
-
-  n <- nrow(med_cell)
-  ess <- round(n_eff(n = n, rho = rho), 0)
-
-  # permutations
-  trt_stats <-
-    sf::st_drop_geometry(pts) |>
-    dplyr::group_by(.data[[x]]) |>
-    dplyr::summarise(
-      !!y := stats::median(.data[[y]], na.rm = TRUE),
-      .groups = "drop"
-    )
-  names(trt_stats)[names(trt_stats) == y] <- paste0(y, "_mean")
-
-  pairs <- utils::combn(unique(pts$.trt), 2, simplify = TRUE)
-  avail <- table(pts$.trt)
-  min_avail <- min(as.integer(avail))
-  min_per_group <- max(2L, min(min_avail, ceiling(ess / treatments)))
-
-  one_run <- function(run_id) {
-    base <- pts |>
-      dplyr::group_by(.data$.trt) |>
-      dplyr::slice_sample(n = min_per_group, replace = FALSE) |>
-      dplyr::ungroup()
-
-    per_pair <- function(j) {
-      tab <- base[base$.trt %in% pairs[, j], ]
-      if (any(table(tab$.trt) < 2) || stats::var(tab[[y]], na.rm = TRUE) == 0) {
-        return(data.frame(
-          Trt_1 = pairs[, j][1],
-          Trt_2 = pairs[, j][2],
-          Comparison = paste(unique(tab$.trt), collapse = " vs. "),
-          p_value = NA_real_,
-          run = run_id
-        ))
+  # Matriz de pesos espaciales
+  lw <-
+    tryCatch(
+      {
+        spdep::nb2listw(gri, glist = fdist, style = "W")
+      },
+      error = function(e) {
+        spdep::set.ZeroPolicyOption(TRUE)
+        spdep::nb2listw(gri, glist = fdist, style = "W")
       }
-      suppressWarnings({
-        a <- permuco::aovperm(fml, data = tab, np = n_p)
-      })
-      data.frame(
-        Trt_1 = pairs[, j][1],
-        Trt_2 = pairs[, j][2],
-        Comparison = paste(unique(tab$.trt), collapse = " vs. "),
-        p_value = a$table$`resampled P(>F)`[1],
-        run = run_id
+    )
+
+  # Magnitud de la autocorrelacion espacial de los residuos
+  rho <- spatialreg::aple(datos_celda_sel_mediana$residuos, lw)
+  # rho <-  ifelse(rho < 0, 0, rho)
+  # Constrain to [0, 1]
+  rho <- min(1, max(0, rho))
+  MI <-
+    spdep::moran.test(datos_celda_sel_mediana$residuos, lw)[[3]][[1]]
+  n <- nrow(datos_celda_sel_mediana)
+  my_n_eff <- n_eff(rho = rho, n = n)
+  ess <- round(my_n_eff, 0)
+
+  tablamuestra <- data.frame(
+    "n" = n,
+    "ESS" = ess,
+    "Rho" = rho,
+    "MI" = MI
+  )
+
+  # Medias Tratamientos
+  medias_tratamientos <-
+    sf::st_drop_geometry(datos_celda_sel_mediana) %>%
+    dplyr::group_by_at(x) %>%
+    dplyr::summarize_at(y, stats::median)
+
+  # Permutacion multiple
+  multipermutacion <- function(p) {
+    # p=1
+    base_permutacion <- datos_celda_sel_mediana %>%
+      dplyr::group_by(gvar) %>%
+      dplyr::slice_sample(n = ceiling(ess / treatments))
+
+    permt_trat <- function(x_compar) {
+      #x=1
+      tabla_permt_parcial <-
+        base_permutacion[base_permutacion$gvar %in% compar[, x_compar], ]
+      suppressWarnings(
+        tabla_permt_parcial_2 <-
+          permuco::aovperm(
+            stats::as.formula(paste(y, x, sep = "~")),
+            data = tabla_permt_parcial,
+            np = n_p
+          )
       )
+
+      tabla_permt_parcial_2 <-
+        data.frame(
+          'Trt_1' = compar[, x_compar][1],
+          'Trt_2' = compar[, x_compar][2],
+          "Comparison" = paste(
+            unique(tabla_permt_parcial$gvar),
+            collapse = " vs. "
+          ),
+          "p-valor" = tabla_permt_parcial_2$table$`resampled P(>F)`[1]
+        )
     }
-    do.call(rbind, lapply(seq_len(ncol(pairs)), per_pair))
+
+    tabla_permutacion_multiple <-
+      do.call(rbind, lapply(seq_len(ncol(compar)), permt_trat))
+    tabla_permutacion_multiple$Corrida <- p
+    tabla_permutacion_multiple
   }
+  resultadosmultipermutacion <-
+    withr::with_seed(7, do.call(rbind, lapply(seq_len(n_s), multipermutacion)))
 
-  perm_runs <- withr::with_seed(
-    7,
-    do.call(rbind, lapply(seq_len(n_s), one_run))
-  )
-
-  p_summary <-
-    perm_runs |>
-    dplyr::group_by(.data$Comparison) |>
+  # Medias p valor multi permutaciones
+  medias_resultadosmultipermutacion <-
+    resultadosmultipermutacion %>%
+    dplyr::group_by(Comparison) %>%
     dplyr::summarise(
-      p_value = stats::median(.data$p_value, na.rm = TRUE),
-      Trt_1 = unique(.data$Trt_1),
-      Trt_2 = unique(.data$Trt_2),
-      .groups = "drop"
-    ) |>
-    dplyr::left_join(trt_stats, by = c("Trt_1" = x)) |>
-    (function(d) d[order(d[[paste0(y, "_mean")]]), ])()
-
-  pv <- p_summary$p_value
-  names(pv) <- gsub(" vs. ", "-", p_summary$Comparison)
-  pv[is.na(pv)] <- 1
-  pv_adj <- stats::p.adjust(pv, method = p_adjust_method)
-
-  letters <- multcompView::multcompLetters(pv_adj, threshold = alpha)
-  letters_vec <- if ("monospacedLetters" %in% names(letters)) {
-    letters$monospacedLetters
-  } else {
-    letters$Letters
-  }
-  letters_tbl <- data.frame(
-    Treatment = names(letters_vec),
-    .groups = unname(letters_vec),
-    check.names = FALSE
-  )
-  names(letters_tbl)[1] <- x
-
-  means_comp <-
-    dplyr::left_join(trt_stats, letters_tbl, by = x) |>
-    (function(d) d[order(d[[paste0(y, "_mean")]], decreasing = TRUE), ])()
-
-  # report
-  rep_counts <- if ("n_obs" %in% names(grid)) {
-    grid$n_obs
-  } else {
-    lengths(sf::st_intersects(grid, data, sparse = TRUE))
-  }
-  gen_info <- data.frame(
-    Cellsize = paste(used_params$cellsize, collapse = " x "),
-    Min.Obs.Cell = suppressWarnings(min(rep_counts, na.rm = TRUE)),
-    Max.Obs.Cell = suppressWarnings(max(rep_counts, na.rm = TRUE)),
-    Median.Obs.Cell = suppressWarnings(stats::median(rep_counts, na.rm = TRUE)),
-    Total.Cells = nrow(grid),
-    # Selected.Cells = length(unique(keep_cells$CellID)),
-    n = n,
-    ESS = ess,
-    Rho = rho,
-    MoranI = MI
-  )
-
-  grid_out <- switch(
-    keep_components,
-    full = grid,
-    light = grid[, "CellID", drop = FALSE],
-    none = NULL
-  )
-
-  p_summary$p_adj <- pv_adj[gsub(" vs. ", "-", p_summary$Comparison)]
-
-  out <- list(
-    `General information` = gen_info,
-    # `Cells per treatment` = table(keep_cells$trt),
-    `ANOVA permutation test` = p_summary[, c("Comparison", "p_value", "p_adj")],
-    `Means comparison` = means_comp,
-    perm_runs = perm_runs,
-    params = list(
-      alpha = alpha,
-      p_adjust_method = p_adjust_method,
-      n_p = n_p,
-      n_s = n_s,
-      grid_source = grid_source,
-      used_config = used_params,
-      # min_per_cell_applied = min_applied,
-      min_per_cell_used = min_used,
-      note = info_note
+      "p-value" = median(p.valor, na.rm = TRUE),
+      "Trt_1" = unique(Trt_1),
+      "Trt_2" = unique(Trt_2)
     )
-  )
-  if (!is.null(grid_out)) {
-    out$`._components` <- list(
-      grid = grid_out,
-      points = data[, c(x, y), drop = FALSE],
-      selected_cells = dplyr::filter(grid_out, CellID %in% jdat$CellID)
+
+  medias_resultadosmultipermutacion <-
+    merge(
+      medias_resultadosmultipermutacion,
+      medias_tratamientos,
+      by.x = 'Trt_1',
+      by.y = x
     )
+  medias_resultadosmultipermutacion <-
+    medias_resultadosmultipermutacion[
+      order(medias_resultadosmultipermutacion[[y]]),
+    ]
+  diffpermutacion <- medias_resultadosmultipermutacion$`p-value`
+  names(diffpermutacion) <-
+    gsub(" vs. ", "-", medias_resultadosmultipermutacion$Comparison)
+  #browser()
+  if (alpha_bonferroni) {
+    alpha <- ifelse(treatments > 2, alpha / treatments, alpha)
   }
-  class(out) <- c("ofemt_result", class(out))
-  out
+
+  letras_comp <-
+    multcompView::multcompLetters(diffpermutacion, threshold = alpha)
+
+  my_letters <- letras_comp$Letters
+  if ("monospacedLetters" %in% names(letras_comp)) {
+    my_letters <- letras_comp$monospacedLetters
+  }
+  # monospacedLetters
+  letras <-
+    data.frame(
+      'Treatment' = names(letras_comp$Letters),
+      'letters' = my_letters,
+      check.names = FALSE
+    )
+
+  colnames(letras)[colnames(letras) == 'Treatment'] <- x
+  diffpermutacion_letras <- merge(medias_tratamientos, letras)
+  diffpermutacion_letras <-
+    diffpermutacion_letras[
+      order(diffpermutacion_letras[[y]], decreasing = TRUE),
+    ]
+
+  colnames(diffpermutacion_letras)[colnames(diffpermutacion_letras) == y] <-
+    paste(y, 'mean', sep = '_')
+
+  infogral <-
+    data.frame(
+      "Cellsize" = paste(cellsize, collapse = "_"),
+      "Min.Obs/Cell" = nmin_cell,
+      "Max.Obs/Cell" = max(as.numeric(my_IDcelda_keeped$n)),
+      "Median.Obs/Cell" = median(as.numeric(my_IDcelda_keeped$n)),
+      tablamuestra
+    )
+  resultadotabla <-
+    list(
+      "General information" = infogral,
+      "Cells per treatment" = table(my_IDcelda_keeped$trat),
+      "ANOVA permutation test" = medias_resultadosmultipermutacion[, c(
+        "Comparison",
+        "p-value"
+      )],
+      "Means comparison" = diffpermutacion_letras
+    )
+  resultadotabla
+}
+
+
+#' Effective sample size
+#'
+#' @description An approximate calculation for the effective sample size for
+#' spatially autocorrelated data. Only valid for approximately normally
+#' distributed data.
+#'
+#' @param n Number of observations.
+#' @param rho Spatial autocorrelation parameter from a simultaneous
+#' autoregressive model.
+#'
+#' @return Returns effective sample size n*, a numeric value.
+#'
+#' @details
+#'
+#' Implements Equation 3 from Griffith (2005).
+#'
+#' @source
+#'
+#' Griffith, Daniel A. (2005). Effective geographic sample size in the presence of spatial autocorrelation. Annals of the Association of American Geographers. Vol. 95(4): 740-760.
+#'
+n_eff <- function(n, rho) {
+  a <- 1 / (1 - exp(-1.92369))
+  b <- (n - 1) / n
+  c <- (1 - exp(-2.12373 * rho + 0.20024 * sqrt(rho)))
+  n_eff <- n * (1 - a * b * c)
+  return(n_eff)
 }

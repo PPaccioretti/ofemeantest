@@ -64,9 +64,14 @@ Use `min_per_cell` to define the minimum number of observations per grid cell,
 and control Bonferroni correction through the argument `p_adjust_method`.
 }
 \examples{
-\dontrun{
-  my_data <- ofe_f2
-  res <- ofemt(my_data, y = "Yield", x = "Treatment",
-               cellsize = 10, min_per_cell = 4, alpha = 0.05)
+data("ofe_f2", package = "ofemeantest")
+ofemt(data = ofe_f2,
+      y = "Yield_tn",
+      x = "Treatment")
+
 }
+\references{
+A new method to compare
+treatments in unreplicated on-farm experimentation. Córdoba M.,
+Paccioretti P., Balzarini M. Under review.
 }
