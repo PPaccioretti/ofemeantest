@@ -1,7 +1,7 @@
 Package: ofemeantest
 Type: Package
 Title: On Farm Experimentation Mean Test
-Version: 0.0.900
+Version: 0.0.900-1
 Authors@R:
     c(
       person("Mariano", "Córdoba", email = "marianoacba@agro.unc.edu.ar", 
@@ -16,10 +16,9 @@ Description: Permutation-based statistical method to support field-specific
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.3
 Imports: 
     dplyr,
-    geostan,
     magrittr,
     multcompView,
     permuco,
@@ -28,4 +27,4 @@ Imports:
     spdep,
     withr
 Depends: 
-    R (>= 2.10)
+    R (>= 4.1.0)

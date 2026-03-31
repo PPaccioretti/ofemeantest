@@ -1,481 +1,410 @@
-#' Method to compare treatments in unreplicated agricultural field trials
-#' with georeferenced data
+#' OFE permutation analysis
 #'
-#' @description
-#' Approach to statistically analyze unreplicated OFE to promote field-specific
-#' inference of treatment effects. Statistical tools for spatial data are
-#' coupled with permutation tests to determine the statistical significance
-#' between treatment means.
+#' Runs a cell-based OFE analysis with permutation ANOVA and spatial diagnostics.
 #'
-#' @param data an \code{sf} object with projected coordinates. If the object
-#' geometries are in geographical coordinates, a valid \code{crs} must be specified.
-#' @param y character of length 1; specifying \code{data} column name containing
-#'   (numeric) response variable.
-#' @param x character of length 1; specifying \code{data} column name containing
-#'   (character or factor) classification variable (treatments to compare).
-#' @param cellsize numeric of length 1 or 2 with target cell size. Argument
-#'    passed to \code{\link[sf]{st_make_grid}}.
-#' @param nmin_cell numeric of length 1; specifying minimum number of data points
-#'    that accommodate each grid cell.
-#' @param n_p numeric positive value specifying the number of permutations.
-#' @param n_s numeric positive value specifying the number of random
-#'     samples of grid cells to carry out perumational ANOVAs.
-#' @param alpha numeric of length 1, alpha value (between 0 and 1) for meant test.
-#' @param shift numeric of length 1 or 2; specifying shift from lower.
-#'   left corner coordinates (x, y) of \code{data}.
-#' @param alpha_bonferroni logical specifying if p-value must be adjusted using
-#'   Bonferroni correction for multiple comparisons.
-#' @param crs coordinate reference system: integer with the EPSG code,
-#'   or character with proj4string to convert coordinates if \code{data} has
-#'   longitude/latitude data.
-#' @param ... additional argument for \code{\link[sf]{st_make_grid}}.
+#' @param data sf points; must contain columns `y` and `x`.
+#' @param y response column (numeric).
+#' @param x treatment column (factor/character).
+#' @param cellsize,shift,angle_deg,buffer,min_per_cell grid settings (used when `grid` is NULL).
+#' @param n_p number of permutations per ANOVA run.
+#' @param n_s number of sampling runs.
+#' @param alpha significance threshold for letters.
+#' @param p_adjust_method p-value adjustment method across pairwise comparisons.
+#' @param keep_components `"none"`, `"light"`, or `"full"` to embed geometries in output.
+#' @param grid optional: an `ofe_grid`, a list with `grid_sel`, or an `sf` object of polygons.
+#' @param crs optional target projected CRS if `data` is in lon/lat.
+#' @param nmin_cell,alpha_bonferroni **Deprecated.**
+#'   Use `min_per_cell` instead of `nmin_cell`, and `p_adjust_method = "bonferroni"`
+#'   instead of `alpha_bonferroni`.
 #'
-#'
-#' @details
-#' The methodology involves:
-#' \enumerate{
-#'   \item calculation of effective sample size (ESS) given the underlying spatial
-#' structure.
-#'   \item ANOVA permutation test on a random sample of ESS.
-#'   \item generation of the empirical distribution of p-values from repetition of
-#' step two. The median of this empirical distribution is regarded as the
-#' p-value associated with the non-treatment effect hypothesis.
-#' }
-#' The test can be easily extended to cover scenarios with more than two
-#' treatments by employing pairwise comparisons of OFE across multiple
-#' treatments, with p-values can be adjusted for multiplicity
-#' using Bonferroni correction
-#'
-#' @return a list of length 4 with mean test comparisson results
-#'
-#' @references A new method to compare
-#' treatments in unreplicated on-farm experimentation. Córdoba M.,
-#' Paccioretti P.,Balzarini M. Under review.
-#'
-#' @importFrom magrittr %>%
+#' @return An object of class `ofemt_result`.
 #' @export
 #'
-#' @examples
-#' data("ofe_f2", package = "ofemeantest")
-#' ofemt(data = ofe_f2,
-#'       y = "Yield_tn",
-#'       x = "Treatment")
+#' @details
+#' Both `nmin_cell` and `alpha_bonferroni` are retained for backward compatibility
+#' but will be removed in a future release.
+#' Use `min_per_cell` to define the minimum number of observations per grid cell,
+#' and control Bonferroni correction through the argument `p_adjust_method`.
 #'
-ofemt <- function(data,
-                  y,
-                  x,
-                  cellsize = 10,
-                  nmin_cell = 4,
-                  n_p = 1000,
-                  n_s = 200,
-                  alpha = 0.05,
-                  shift = 0,
-                  alpha_bonferroni = FALSE,
-                  crs = NULL,
-                  ...) {
-  # Test
-  if (!inherits(data, "sf")) {
-    stop("data must be an sf object")
-  }
-  if (sf::st_is_longlat(data) & !is.na(sf::st_crs(data))) {
-    stopifnot(
-      'coordinates provided in crs are longlat degrees' =
-        !sf::st_is_longlat(crs),
-      'crs must be provided' =
-        !is.null(crs)
+#' @examples
+#' \dontrun{
+#'   my_data <- ofe_f2
+#'   res <- ofemt(my_data, y = "Yield", x = "Treatment",
+#'                cellsize = 10, min_per_cell = 4, alpha = 0.05)
+#' }
+ofemt <- function(
+  data,
+  y,
+  x,
+  cellsize = 10,
+  min_per_cell = 4,
+  nmin_cell = NULL,
+  n_p = 1000,
+  n_s = 200,
+  alpha = 0.05,
+  shift = c(0, 0),
+  p_adjust_method = c("none", "bonferroni", "holm", "BH"),
+  crs = NULL,
+  keep_components = c("none", "light", "full"),
+  grid = NULL,
+  angle_deg = 0,
+  buffer = 0,
+  alpha_bonferroni = NULL
+) {
+  # --- Deprecation handling ---
+  if (!is.null(nmin_cell)) {
+    warning(
+      "`nmin_cell` is deprecated; use `min_per_cell` instead.",
+      call. = FALSE
     )
-    data <- sf::st_transform(data, crs = crs)
-
-  }
-  # y
-  if (missing(y)) {
-    stop('y must be a valid column name')
-  }
-  stopifnot('y must be a vald column name' =
-              y %in% colnames(data))
-  if (!is.numeric(data[[y]])) {
-    stop('column', y, 'must be a numeric column.')
-  }
-  # x
-  if (missing(x)) {
-    stop('x must be a valid column name')
-  }
-  if (length(x) != 1) {
-    stop(paste0('x must be a vector of length 1.'))
-  }
-  stopifnot('x must be a vald column name' =
-              x %in% colnames(data))
-  if (!(is.character(data[[x]]) | is.factor(data[[x]]))) {
-    stop('column ', x, ' must be a character or factor column.')
+    min_per_cell <- nmin_cell
   }
 
-  # shift
-  if (!is.numeric(shift)) {
-    stop(paste0('shift (', utils::head(shift), ') must be a number.'))
-  }
-  if (length(shift) < 1 | length(shift) > 2) {
-    stop(paste0('shift (', utils::head(shift), ') must be a vector of length 1 or 2.'))
-  }
-  # dim celda
-  if (!is.numeric(cellsize)) {
-    stop(paste0('cellsize (', utils::head(cellsize), ') must be a number.'))
-  }
-  #length(cellsize) mus be 1 or 2
-  if (length(cellsize) < 1 | length(cellsize) > 2) {
-    stop(paste0(
-      'cellsize (',
-      utils::head(cellsize),
-      ') must be a vector of length 1 or 2.'
-    ))
-  }
-  # bonferroni
-  if (!is.logical(alpha_bonferroni) |
-      length(alpha_bonferroni) != 1) {
-    stop(paste0('alpha_bonferroni must be a logical vector of length 1.'))
-  }
-  # alpha
-
-  if (length(alpha) != 1) {
-    stop(paste0('alpha must be a vector of length 1.'))
-  }
-  if (!is.numeric(alpha) || alpha <= 0 || alpha >= 1) {
-    stop('alpha (',
-         alpha,
-         ') must be a unique numeric value between 0 and 1.')
-  }
-
-  if (!is.numeric(n_p)) {
-    stop(paste0('n_p (', utils::head(n_p), ') must be a number.'))
-  }
-  if (n_p <= 0) {
-    stop(paste0('n_p (', n_p, ') must be a positive number.'))
-  }
-
-  raw_data <- data
-
-  # Removes spaces in tratment variable
-  data[['gvar']] <- gsub(" ", ".", data[[x]])
-
-  treatments <- length(unique(data$gvar))
-
-  if (treatments < 2) {
-    stop('Two or more treatments must be compared')
-  }
-
-  grid <- sf::st_as_sf(
-    sf::st_make_grid(
-      data,
-      cellsize = cellsize,
-      flat_topped = TRUE,
-      offset = sf::st_bbox(data)[c("xmin", "ymin")] -
-        shift,
-      # ...
+  if (!is.null(alpha_bonferroni)) {
+    warning(
+      "`alpha_bonferroni` is deprecated; use `p_adjust_method = 'bonferroni'` instead.",
+      call. = FALSE
     )
-  )
-
-  grid$IDcelda <- seq_len(nrow(grid))
-
-
-  datos <-
-    sf::st_join(data,
-                grid,
-                join = sf::st_intersects,
-                left = FALSE)
-
-  grid3 <-
-    sf::st_join(grid,
-                data,
-                join = sf::st_intersects,
-                left = FALSE)
-
-
-  my_unique_n <- stats::aggregate(datos$gvar,
-                           by = list("IDcelda" = datos$IDcelda),
-                           function(x) {
-                             c(length(unique(x)),
-                               ifelse(length(unique(x)) == 1,
-                                      unique(x),
-                                      NA),
-                               length(x))
-                           }, simplify = TRUE)
-  my_unique_n <- do.call(data.frame, my_unique_n)
-  my_unique_n <-
-    stats::setNames(my_unique_n, c("IDcelda", "unique_trat", "trat", "n"))
-
-
-  my_row_to_keep <-
-    my_unique_n$unique_trat == 1 & my_unique_n$n >= nmin_cell
-
-  my_IDcelda_keeped <- my_unique_n[my_row_to_keep,]
-
-
-  # if all are FALSE (!TRUE)
-  if (all(!my_row_to_keep)) {
-    stop(paste0(
-      'No cells with more than nmin_cell (',
-      nmin_cell,
-      ') observations.'
-    ))
+    p_adjust_method <- "bonferroni"
   }
 
-
-  datos_celda_sel <- subset(datos,
-                            datos[["IDcelda"]] %in% my_IDcelda_keeped[["IDcelda"]])#datos#merge(datos, my_unique_n, by = "IDcelda")
-
-
-  # if (plot_grilla == T) {
-  #   # set.seed(semilla)
-  #   plot1 <-
-  #     #mapview::mapview(grid3, alpha.regions = 0, layer.name = "Grilla") +
-  #     mapview::mapview(
-  #       datos,
-  #       #col.regions = RColorBrewer::brewer.pal(n = treatments, name = "Set3"),
-  #       zcol = "gvar",
-  #       cex = 4,
-  #       alpha = 0,
-  #       layer.name = "Data"
-  #     )
-  #
-  #   # mapview::mapviewGetOption("vector.palette")
-  #
-  #   gridsel <-
-  #     subset(grid3, grid3$IDcelda %in% datos_celda_sel$IDcelda)
-  #
-  #   plot2 <-  mapview::mapview(
-  #     gridsel,
-  #     color = "blue",
-  #     cex = 4,
-  #     alpha.regions = 0,
-  #     layer.name = "Selected cells"
-  #   )
-  #
-  #   print(plot1 + plot2)
-  #
-  # }
-  compar <- utils::combn(unique(data$gvar), 2, simplify = TRUE)
-
-  variables <- c(y, "X", "Y")
-
-  datos_celda_sel_mediana <-
-    data.frame(sf::st_coordinates(datos_celda_sel),
-               sf::st_drop_geometry(datos_celda_sel))  %>%
-    dplyr::group_by(gvar, IDcelda) %>%
-    dplyr::summarise_at(variables, stats::median) %>%
-    dplyr::ungroup()
-
-  datos_celda_sel_mediana <-
-    dplyr::left_join(datos_celda_sel_mediana,
-                     unique(sf::st_drop_geometry(datos_celda_sel[, c("IDcelda", "gvar", x)])),
-                     by = c("IDcelda", "gvar"))
-
-  my_model <- stats::lm(stats::as.formula(paste(y,
-                                  paste(x, collapse = " + "),
-                                  sep = " ~ ")),
-                 data = datos_celda_sel_mediana)
-  datos_celda_sel_mediana$residuos <-
-    stats::aov(my_model)[['residuals']]
-
-  datos_celda_sel_mediana <-
-    sf::st_as_sf(
-      datos_celda_sel_mediana,
-      coords = c("X", "Y"),
-      crs = sf::st_crs(datos_celda_sel)
-    )
-
-  # Matriz de vecinos
-  k1 <- spdep::knn2nb(spdep::knearneigh(datos_celda_sel_mediana))
-  # Minima distancia para asegurarse de tener un dato vecino.
-  dmax <- max(unlist(spdep::nbdists(k1, datos_celda_sel_mediana)))
-  # Armado de grilla
-  gri <- spdep::dnearneigh(datos_celda_sel_mediana, 0, dmax)
-  dist <- spdep::nbdists(gri, datos_celda_sel_mediana)
-  # peso de vecino ponderado por la distancia
-  fdist <- lapply(dist, function(x) {
-    1 / (x / dmax)
-  })
-  # Matriz de pesos espaciales
-  lw <-
-    tryCatch({
-      spdep::nb2listw(gri, glist = fdist, style = "W")
+  keep_components <- match.arg(
+    if (is.logical(keep_components)) {
+      if (keep_components) "light" else "none"
+    } else {
+      keep_components
     },
-    error = function(e) {
-      spdep::set.ZeroPolicyOption(TRUE)
-      spdep::nb2listw(gri, glist = fdist, style = "W")
-    })
-
-  # Magnitud de la autocorrelacion espacial de los residuos
-  rho <- spatialreg::aple(datos_celda_sel_mediana$residuos, lw)
-  MI <-
-    spdep::moran.test(datos_celda_sel_mediana$residuos, lw)[[3]][[1]]
-  n <- nrow(datos_celda_sel_mediana)
-  ess <-  round(geostan::n_eff(rho = rho, n = n), 0)
-
-  tablamuestra <- data.frame(
-    "n" = n,
-    "ESS" = ess,
-    "Rho" = rho,
-    "MI" = MI
+    c("none", "light", "full")
+  )
+  p_adjust_method <- match.arg(
+    if (is.logical(p_adjust_method)) {
+      if (p_adjust_method) "bonferroni" else "none"
+    } else {
+      p_adjust_method
+    },
+    c("none", "bonferroni", "holm", "BH")
   )
 
+  stopifnot(inherits(data, "sf"))
+  stopifnot(
+    length(y) == 1,
+    length(x) == 1,
+    y %in% names(data),
+    x %in% names(data)
+  )
+  if (!is.numeric(data[[y]])) {
+    stop("`y` must be numeric.")
+  }
+  if (!(is.character(data[[x]]) || is.factor(data[[x]]))) {
+    stop("`x` must be factor/character.")
+  }
 
-  # Medias Tratamientos
-  medias_tratamientos <-
-    sf::st_drop_geometry(datos_celda_sel_mediana)  %>%
-    dplyr::group_by_at(x) %>%
-    dplyr::summarize_at(y, median)
-
-
-  # Permutacion multiple
-  multipermutacion <- function(p) {
-    # p=1
-    base_permutacion <- datos_celda_sel_mediana %>%
-      dplyr::group_by(gvar) %>%
-      dplyr::slice_sample(n = ceiling(ess / treatments))
-
-    permt_trat <- function(x_compar) {
-      #x=1
-      tabla_permt_parcial <-
-        base_permutacion[base_permutacion$gvar %in% compar[,x_compar],]
-      suppressWarnings(
-        tabla_permt_parcial_2 <-
-          permuco::aovperm(stats::as.formula(paste(y, x, sep = "~")),
-                           data = tabla_permt_parcial,
-                           np = n_p)
-      )
-
-      tabla_permt_parcial_2 <-
-        data.frame(
-          'Trt_1' = compar[, x_compar][1],
-          'Trt_2' = compar[, x_compar][2],
-          "Comparison" = paste(unique(tabla_permt_parcial$gvar), collapse = " vs. "),
-          "p-valor" = tabla_permt_parcial_2$table$`resampled P(>F)`[1]
-        )
-
+  if (sf::st_is_longlat(data)) {
+    if (is.null(crs)) {
+      stop("`data` is lon/lat. Provide a projected `crs`.")
     }
-
-    tabla_permutacion_multiple <-
-      do.call(rbind, lapply(seq_len(ncol(compar)), permt_trat))
-    tabla_permutacion_multiple$Corrida <- p
-    tabla_permutacion_multiple
-
+    crs_obj <- sf::st_crs(crs)
+    if (sf::st_is_longlat(crs_obj)) {
+      stop("Target `crs` must be projected.")
+    }
+    data <- sf::st_transform(data, crs_obj)
   }
-  resultadosmultipermutacion <-
-    withr::with_seed(7,
-                     do.call(rbind, lapply(seq_len(n_s), multipermutacion)))
 
+  data[[".trt"]] <- gsub(" ", ".", as.character(data[[x]]))
+  treatments <- length(unique(data$.trt))
+  if (treatments < 2) {
+    stop("Need at least two treatments.")
+  }
 
-  #write.table(resultadosmultipermutacion, paste0(getwd(),"/",field,"Valores_p_",y,"_",x,".txt"))
+  grid_source <- "generated"
+  used_params <- list(
+    cellsize = if (length(cellsize) == 1) {
+      c(cellsize, cellsize)
+    } else {
+      cellsize[1:2]
+    },
+    shift = shift,
+    angle_deg = angle_deg,
+    buffer = buffer,
+    min_per_cell = min_per_cell
+  )
+  # min_applied <- TRUE
+  min_used <- min_per_cell
+  info_note <- NA_character_
 
-  # # Histograma p valor
-  # plotpvalor <-
-  #   ggplot2::ggplot(
-  #     resultadosmultipermutacion,
-  #     ggplot2::aes(x = p.valor,
-  #                  fill = Comparison,
-  #                  colour = Comparison)
-  #   ) +
-  #   ggplot2::geom_histogram(alpha = 0.5, position = "identity") +
-  #   ggplot2::labs(y = "Absolute Frecuency", x = "p-value") +
-  #   ggplot2::facet_wrap(~ Comparison) +
-  #   ggplot2::xlim(0, 1) +
-  #   ggplot2::ylim(0, 50)
+  # --- grid handling
 
+  if (!is.null(grid) & !inherits(grid, "ofe_grid")) {
+    stop("`grid` must be ofe_grid.")
+  }
 
+  if (!is.null(grid) & inherits(grid, "ofe_grid")) {
+    stopifnot(inherits(grid$grid_sel, "sf"))
+    grid_source <- "provided_ofe_grid_sel"
+    used_params <- grid$params
+    grid <- grid$grid_sel
+    # class(grid) <- c('ofe_grid', class(grid))
+    # min_applied <- FALSE
+    min_used <- used_params$min_per_cell
+  }
 
-  # Medias p valor multi permutaciones
-  medias_resultadosmultipermutacion <-
-    resultadosmultipermutacion  %>%
-    dplyr::group_by(Comparison) %>%
+  # --- generated path: call make_ofe_grid and DO NOT re-apply min threshold here
+  if (grid_source == "generated") {
+    gint <- make_ofe_grid(
+      data = data,
+      x = x,
+      cellsize = used_params$cellsize,
+      angle_deg = used_params$angle_deg,
+      buffer = used_params$buffer,
+      shift = used_params$shift #,
+      # min_per_cell = used_params$min_per_cell,
+      # return_both = TRUE
+    )
+    grid <- gint$grid_sel
+    ap <- attr(grid, "ofe_params", exact = TRUE)
+    if (!is.null(ap)) {
+      used_params <- ap
+    }
+    # min_applied <- FALSE
+    min_used <- used_params$min_per_cell
+  } else {
+    if (is.na(sf::st_crs(grid))) {
+      stop("CRS mismatch between `grid` and `data`.")
+    }
+    if (!any(sf::st_geometry_type(grid) %in% c("POLYGON", "MULTIPOLYGON"))) {
+      stop("`grid` must be polygons.")
+    }
+    if (sf::st_crs(grid) != sf::st_crs(data)) {
+      warning("`grid` CRS was trasformed to `data` CRS.", call. = FALSE)
+      grid <- sf::st_transform(grid, sf::st_crs(data))
+    }
+  }
+
+  # if (!"CellID" %in% names(grid)) {
+  #   grid$CellID <- seq_len(nrow(grid))
+  # }
+
+  # # join points to cells
+  jdat <- sf::st_join(data, grid, join = sf::st_intersects, left = FALSE)
+
+  # tmp <- stats::aggregate(
+  #   jdat$.trt,
+  #   by = list(CellID = jdat$CellID),
+  #   FUN = function(z) {
+  #     c(
+  #       n_trt = length(unique(z)),
+  #       trt = ifelse(length(unique(z)) == 1, unique(z), NA),
+  #       n = length(z)
+  #     )
+  #   }
+  # )
+  # tmp <- do.call(data.frame, tmp)
+  # names(tmp) <- c("CellID", "unique_trt", "trt", "n")
+
+  # # eligibility: if min already applied upstream, only require 1 unique trt
+  # eligible <- tmp$unique_trt == 1
+  # # if (isFALSE(min_applied)) {
+  # #   tmp$unique_trt == 1
+  # # } else {
+  # #   tmp$unique_trt == 1 & tmp$n >= min_per_cell
+  # # }
+  # if (!any(eligible)) {
+  #   stop(
+  #     "No eligible cells (no single treatment per cell)."
+  #   )
+  # }
+  # keep_cells <- tmp[eligible, , drop = FALSE]
+  # jdat_keep <- subset(jdat, jdat$CellID %in% keep_cells$CellID)
+
+  # per-cell medians (y, coords)
+  coord_df <- data.frame(
+    sf::st_coordinates(jdat),
+    sf::st_drop_geometry(jdat)
+  )
+  vars <- c(y, "X", "Y")
+  suppressWarnings({
+    med_cell <-
+      coord_df |>
+      dplyr::group_by(.data$.trt, .data$CellID) |>
+      dplyr::summarise(
+        dplyr::across(dplyr::all_of(vars), ~ stats::median(.x, na.rm = TRUE)),
+        .groups = "drop"
+      )
+  })
+  med_cell <- dplyr::left_join(
+    med_cell,
+    unique(sf::st_drop_geometry(jdat[, c("CellID", ".trt", x)])),
+    by = c("CellID", ".trt")
+  )
+
+  # model + spatial autocorr (keep spdep warnings untouched)
+  fml <- stats::as.formula(paste(y, x, sep = " ~ "))
+  fit <- stats::lm(fml, data = med_cell)
+  med_cell$resid <- stats::residuals(fit)
+
+  pts <- sf::st_as_sf(med_cell, coords = c("X", "Y"), crs = sf::st_crs(data))
+  k1 <-
+    suppressWarnings(
+      spdep::knn2nb(spdep::knearneigh(sf::st_coordinates(
+        pts
+      )))
+    )
+  dmax <- max(unlist(spdep::nbdists(k1, sf::st_coordinates(pts))))
+  nb <-
+    suppressWarnings(
+      spdep::dnearneigh(sf::st_coordinates(pts), 0, dmax)
+    )
+  dlist <- spdep::nbdists(nb, sf::st_coordinates(pts))
+  glist <- lapply(dlist, function(x) 1 / (x / dmax))
+  lw <- spdep::nb2listw(nb, glist = glist, style = "W", zero.policy = TRUE)
+
+  MI <- spdep::moran.test(med_cell$resid, lw, zero.policy = TRUE)$estimate[[
+    "Moran I statistic"
+  ]]
+  rho <- spatialreg::aple(med_cell$resid, lw)
+  rho <- min(1, max(0, rho))
+
+  n <- nrow(med_cell)
+  ess <- round(n_eff(n = n, rho = rho), 0)
+
+  # permutations
+  trt_stats <-
+    sf::st_drop_geometry(pts) |>
+    dplyr::group_by(.data[[x]]) |>
     dplyr::summarise(
-      "p-value" = median(p.valor, na.rm = TRUE),
-      "Trt_1" = unique(Trt_1),
-      "Trt_2" = unique(Trt_2)
+      !!y := stats::median(.data[[y]], na.rm = TRUE),
+      .groups = "drop"
     )
+  names(trt_stats)[names(trt_stats) == y] <- paste0(y, "_mean")
 
+  pairs <- utils::combn(unique(pts$.trt), 2, simplify = TRUE)
+  avail <- table(pts$.trt)
+  min_avail <- min(as.integer(avail))
+  min_per_group <- max(2L, min(min_avail, ceiling(ess / treatments)))
 
-  medias_resultadosmultipermutacion <-
-    merge(
-      medias_resultadosmultipermutacion,
-      medias_tratamientos,
-      by.x = 'Trt_1',
-      by.y = x
-    )
-  medias_resultadosmultipermutacion <-
-    medias_resultadosmultipermutacion[order(medias_resultadosmultipermutacion[[y]]),]
-  diffpermutacion <- medias_resultadosmultipermutacion$`p-value`
-  names(diffpermutacion) <-
-    gsub(" vs. ",
-         "-",
-         medias_resultadosmultipermutacion$Comparison)
-  #browser()
-  if (alpha_bonferroni) {
-    alpha <- ifelse(treatments > 2, alpha / treatments, alpha)
+  one_run <- function(run_id) {
+    base <- pts |>
+      dplyr::group_by(.data$.trt) |>
+      dplyr::slice_sample(n = min_per_group, replace = FALSE) |>
+      dplyr::ungroup()
+
+    per_pair <- function(j) {
+      tab <- base[base$.trt %in% pairs[, j], ]
+      if (any(table(tab$.trt) < 2) || stats::var(tab[[y]], na.rm = TRUE) == 0) {
+        return(data.frame(
+          Trt_1 = pairs[, j][1],
+          Trt_2 = pairs[, j][2],
+          Comparison = paste(unique(tab$.trt), collapse = " vs. "),
+          p_value = NA_real_,
+          run = run_id
+        ))
+      }
+      suppressWarnings({
+        a <- permuco::aovperm(fml, data = tab, np = n_p)
+      })
+      data.frame(
+        Trt_1 = pairs[, j][1],
+        Trt_2 = pairs[, j][2],
+        Comparison = paste(unique(tab$.trt), collapse = " vs. "),
+        p_value = a$table$`resampled P(>F)`[1],
+        run = run_id
+      )
+    }
+    do.call(rbind, lapply(seq_len(ncol(pairs)), per_pair))
   }
 
-  letras_comp <-
-    multcompView::multcompLetters(diffpermutacion, threshold = alpha)
+  perm_runs <- withr::with_seed(
+    7,
+    do.call(rbind, lapply(seq_len(n_s), one_run))
+  )
 
-  my_letters <- letras_comp$Letters
-  if ("monospacedLetters" %in% names(letras_comp)) {
-    my_letters <- letras_comp$monospacedLetters
+  p_summary <-
+    perm_runs |>
+    dplyr::group_by(.data$Comparison) |>
+    dplyr::summarise(
+      p_value = stats::median(.data$p_value, na.rm = TRUE),
+      Trt_1 = unique(.data$Trt_1),
+      Trt_2 = unique(.data$Trt_2),
+      .groups = "drop"
+    ) |>
+    dplyr::left_join(trt_stats, by = c("Trt_1" = x)) |>
+    (function(d) d[order(d[[paste0(y, "_mean")]]), ])()
+
+  pv <- p_summary$p_value
+  names(pv) <- gsub(" vs. ", "-", p_summary$Comparison)
+  pv[is.na(pv)] <- 1
+  pv_adj <- stats::p.adjust(pv, method = p_adjust_method)
+
+  letters <- multcompView::multcompLetters(pv_adj, threshold = alpha)
+  letters_vec <- if ("monospacedLetters" %in% names(letters)) {
+    letters$monospacedLetters
+  } else {
+    letters$Letters
   }
-  # monospacedLetters
-  letras <-
-    data.frame(
-      'Treatment' = names(letras_comp$Letters),
-      'letters' =  my_letters,
-      check.names = FALSE
+  letters_tbl <- data.frame(
+    Treatment = names(letters_vec),
+    .groups = unname(letters_vec),
+    check.names = FALSE
+  )
+  names(letters_tbl)[1] <- x
+
+  means_comp <-
+    dplyr::left_join(trt_stats, letters_tbl, by = x) |>
+    (function(d) d[order(d[[paste0(y, "_mean")]], decreasing = TRUE), ])()
+
+  # report
+  rep_counts <- if ("n_obs" %in% names(grid)) {
+    grid$n_obs
+  } else {
+    lengths(sf::st_intersects(grid, data, sparse = TRUE))
+  }
+  gen_info <- data.frame(
+    Cellsize = paste(used_params$cellsize, collapse = " x "),
+    Min.Obs.Cell = suppressWarnings(min(rep_counts, na.rm = TRUE)),
+    Max.Obs.Cell = suppressWarnings(max(rep_counts, na.rm = TRUE)),
+    Median.Obs.Cell = suppressWarnings(stats::median(rep_counts, na.rm = TRUE)),
+    Total.Cells = nrow(grid),
+    # Selected.Cells = length(unique(keep_cells$CellID)),
+    n = n,
+    ESS = ess,
+    Rho = rho,
+    MoranI = MI
+  )
+
+  grid_out <- switch(
+    keep_components,
+    full = grid,
+    light = grid[, "CellID", drop = FALSE],
+    none = NULL
+  )
+
+  p_summary$p_adj <- pv_adj[gsub(" vs. ", "-", p_summary$Comparison)]
+
+  out <- list(
+    `General information` = gen_info,
+    # `Cells per treatment` = table(keep_cells$trt),
+    `ANOVA permutation test` = p_summary[, c("Comparison", "p_value", "p_adj")],
+    `Means comparison` = means_comp,
+    perm_runs = perm_runs,
+    params = list(
+      alpha = alpha,
+      p_adjust_method = p_adjust_method,
+      n_p = n_p,
+      n_s = n_s,
+      grid_source = grid_source,
+      used_config = used_params,
+      # min_per_cell_applied = min_applied,
+      min_per_cell_used = min_used,
+      note = info_note
     )
-
-  colnames(letras)[colnames(letras) == 'Treatment'] <- x
-  diffpermutacion_letras <- merge(medias_tratamientos,
-                                  letras)
-  diffpermutacion_letras <-
-    diffpermutacion_letras[order(diffpermutacion_letras[[y]], decreasing = TRUE), ]
-
-  # plotcomparacion <-
-  #   ggplot2::ggplot(diffpermutacion_letras, ggplot2::aes(x = reorder(.data[[x]], .data[[y]]), y =
-  #                                                          .data[[y]])) +
-  #   ggplot2::geom_bar(
-  #     width = 0.5,
-  #     stat = "identity",
-  #     color = "black",
-  #     position = ggplot2::position_dodge(width = 0.8),
-  #   ) +
-  #   ggplot2::geom_text(
-  #     ggplot2::aes(
-  #       x = reorder(.data[[x]], .data[[y]]),
-  #       y = .data[[y]] ,
-  #       label = as.matrix(letters)
-  #     ),
-  #     position = ggplot2::position_dodge(width = 0.8),
-  #     vjust = -(0.5),
-  #     size = 5
-  #   ) +
-  #   ggplot2::labs(x = xlab,
-  #                 y = ylab) +
-  #   ggplot2::theme(text = ggplot2::element_text(size = 15))
-
-  # print(plotcomparacion)
-
-  colnames(diffpermutacion_letras)[colnames(diffpermutacion_letras) == y] <-
-    paste(y, 'mean', sep = '_')
-  #browser()
-
-  infogral <-
-    data.frame(
-      "Cellsize" = paste(cellsize, collapse = "_"),
-      "Min.Obs/Cell" = nmin_cell,
-      "Max.Obs/Cell" = max(as.numeric(my_IDcelda_keeped$n)),
-      "Median.Obs/Cell" = median(as.numeric(my_IDcelda_keeped$n)),
-      tablamuestra
+  )
+  if (!is.null(grid_out)) {
+    out$`._components` <- list(
+      grid = grid_out,
+      points = data[, c(x, y), drop = FALSE],
+      selected_cells = dplyr::filter(grid_out, CellID %in% jdat$CellID)
     )
-  resultadotabla <-
-    list(
-      "General information" = infogral,
-      "Cells per treatment" = table(my_IDcelda_keeped$trat),
-      "ANOVA permutation test" = medias_resultadosmultipermutacion[, c("Comparison", "p-value")],
-      "Means comparison" = diffpermutacion_letras
-    )
-  resultadotabla
+  }
+  class(out) <- c("ofemt_result", class(out))
+  out
 }

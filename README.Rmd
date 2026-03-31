@@ -66,17 +66,19 @@ p-values are collected to generate an empirical p-value distribution.
 Finally, the median p-value is calculated to compare the means.
 
 ```{r use_function}
-ofemt(data = ofe_f2,
-      y = "Yield_tn",
-      x = "Treatment",
-      cellsize = 9,
-      nmin_cell = 4,
-      n_p = 2000,
-      n_s = 200,
-      alpha = 0.05,
-      shift = 0,
-      alpha_bonferroni = FALSE,
-      crs = NULL) # en la salida corregir que diga MI en lugar IM
+ofemt(
+  data = ofe_f2,
+  y = "Yield_tn",
+  x = "Treatment",
+  cellsize = 9,
+  nmin_cell = 4,
+  n_p = 2000,
+  n_s = 200,
+  alpha = 0.05,
+  shift = 0,
+  alpha_bonferroni = FALSE,
+  crs = NULL
+) # en la salida corregir que diga MI en lugar IM
 
 ```
 
@@ -95,3 +97,11 @@ in unreplicated on-farm experimentation. Precis. Agric. (under review).
 Vega A., Córdoba M., Balzarini M. 2019. Protocol for automating error removal
 from yield maps. Precis. Agric. 20: 1030–1044. 
 https://doi.org/10.1007/s11119-018-09632-8
+
+
+
+
+Hacer funcion make_grid. 
+La funcion va  atener dentro dos funciones pricipales
+Una que hace la grilla. `all_cells_grid`
+Otra que selecciona las celdas de la grilla en funcion de las observaciones. `select_grid`

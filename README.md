@@ -4,6 +4,7 @@
 # ofemeantest
 
 <!-- badges: start -->
+
 <!-- badges: end -->
 
 ## Installation
@@ -55,36 +56,39 @@ p-value distribution. Finally, the median p-value is calculated to
 compare the means.
 
 ``` r
-ofemt(data = ofe_f2,
-      y = "Yield_tn",
-      x = "Treatment",
-      cellsize = 9,
-      nmin_cell = 4,
-      n_p = 2000,
-      n_s = 200,
-      alpha = 0.05,
-      shift = 0,
-      alpha_bonferroni = FALSE,
-      crs = NULL) # en la salida corregir que diga MI en lugar IM
-#> Warning in mean.default(sort(x, partial = half + 0L:1L)[half + 0L:1L]):
-#> argument is not numeric or logical: returning NA
-#> $`General information`
-#>   Cellsize Min.Obs.Cell Max.Obs.Cell Median.Obs.Cell   n ESS      Rho        IM
-#> 1        9            4            7              NA 554  97 0.652285 0.5483085
+ofemt(
+  data = ofe_f2,
+  y = "Yield_tn",
+  x = "Treatment",
+  cellsize = 9,
+  nmin_cell = 4,
+  n_p = 2000,
+  n_s = 200,
+  alpha = 0.05,
+  shift = 0,
+  alpha_bonferroni = FALSE,
+  crs = NULL
+) # en la salida corregir que diga MI en lugar IM
+#> Warning: `nmin_cell` is deprecated; use `min_per_cell` instead.
+#> Warning: `alpha_bonferroni` is deprecated; use `p_adjust_method = 'bonferroni'`
+#> instead.
 #> 
-#> $`Cells per treatment`
+#> === OFE permutation analysis ===
+#> Obs/cell (min/median/max): 1 / 5 / 7
+#> n: 633 | ESS: 89 | Rho: 0.705 | Moran's I: 0.615
 #> 
-#>    Control Fertilized 
-#>        273        281 
+#> --- Means comparison ---
+#> # A tibble: 2 × 3
+#>   Treatment  Yield_tn_mean .groups
+#>   <chr>              <dbl> <chr>  
+#> 1 Fertilized          5.28 " b"   
+#> 2 Control             4.74 "a "   
 #> 
-#> $`ANOVA permutation test`
-#>               Comparison p-value
-#> 1 Control vs. Fertilized   0.008
-#> 
-#> $`Means comparison`
-#>    Treatment Yield_tn_mean letters
-#> 2 Fertilized      5.280402       b
-#> 1    Control      4.760095      a
+#> --- Pairwise tests (median p-value across runs, corrected p-value) ---
+#> # A tibble: 1 × 3
+#>   Comparison             p_value  p_adj
+#>   <chr>                    <dbl>  <dbl>
+#> 1 Control vs. Fertilized  0.0208 0.0208
 ```
 
 The results show that out of the total number of cells selected (554),
@@ -104,3 +108,7 @@ treatments in unreplicated on-farm experimentation. Precis. Agric.
 Vega A., Córdoba M., Balzarini M. 2019. Protocol for automating error
 removal from yield maps. Precis. Agric. 20: 1030–1044.
 <https://doi.org/10.1007/s11119-018-09632-8>
+
+Hacer funcion make_grid. La funcion va atener dentro dos funciones
+pricipales Una que hace la grilla. `all_cells_grid` Otra que selecciona
+las celdas de la grilla en funcion de las observaciones. `select_grid`
