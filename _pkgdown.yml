@@ -11,10 +11,10 @@ home:
 navbar:
   structure:
     left:
-    - intro
-    - articles
-    - reference
-    - news
+      - intro
+      - articles
+      - reference
+      - news
     right:
     - search
     - github
