@@ -1,5 +1,6 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+name: pkgdown
 on:
   push:
     branches: [main, master]
@@ -8,7 +9,6 @@ on:
     types: [published]
   workflow_dispatch:
 
-name: pkgdown.yaml
 
 permissions: read-all
 
@@ -39,9 +39,7 @@ jobs:
       - uses: r-lib/actions/setup-tinytex@v2
 
       - name: Build site
-        run: |
-          pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
-          file.create("docs/.nojekyll")
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
 
       - name: Deploy to GitHub pages 🚀

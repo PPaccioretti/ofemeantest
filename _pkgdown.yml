@@ -3,7 +3,7 @@ template:
   bootstrap: 5
   bootswatch: flatly
 development:
-  mode: auto
+  mode: release
 home:
   title: ofemeantest — On-Farm Experimentation Mean Test
   description: |
