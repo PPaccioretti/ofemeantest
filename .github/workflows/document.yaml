@@ -27,7 +27,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::roxygen2, any::devtools, local::.
+          extra-packages: any::roxygen2, any::remotes, local::.
           needs: roxygen2
 
       - name: Pin roxygen2 to the version recorded in DESCRIPTION
