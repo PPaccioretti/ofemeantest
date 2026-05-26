@@ -52,7 +52,7 @@ following Vega et al. (2019).
 library(ofemeantest)
 data("ofe_f2")
 
-ofe_f2
+head(ofe_f2)
 ```
 
 ### Quick run
@@ -61,14 +61,14 @@ Call `ofemt()` and let it build the grid internally:
 
 ```{r quick, message = FALSE, warning = FALSE}
 res <- ofemt(
-  data         = ofe_f2,
-  y            = "Yield_tn",
-  x            = "Treatment",
-  cellsize     = 9,
+  data = ofe_f2,
+  y = "Yield_tn",
+  x = "Treatment",
+  cellsize = 9,
   min_per_cell = 4,
-  n_p          = 2000,
-  n_s          = 200,
-  alpha        = 0.05
+  n_p = 2000,
+  n_s = 200,
+  alpha = 0.05
 )
 res
 ```
@@ -92,22 +92,23 @@ grid explicitly with `make_ofe_grid()` and pass it to `ofemt()`.
 
 ```{r stepwise, message = FALSE, warning = FALSE}
 g <- make_ofe_grid(
-  data         = ofe_f2,
-  x            = "Treatment",
-  cellsize     = 9,
+  data = ofe_f2,
+  x = "Treatment",
+  cellsize = 9,
   min_per_cell = 4
 )
-g
+names(g)
+
 
 plot_grid_selection(g)
 
 res2 <- ofemt(
   data = ofe_f2,
-  y    = "Yield_tn",
-  x    = "Treatment",
+  y = "Yield_tn",
+  x = "Treatment",
   grid = g,
-  n_p  = 2000,
-  n_s  = 200
+  n_p = 2000,
+  n_s = 200
 )
 ```
 
@@ -123,8 +124,22 @@ with the same inputs return identical p-values:
 
 ```{r seed, eval = FALSE}
 identical(
-  ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9, min_per_cell = 4, seed = 7L),
-  ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9, min_per_cell = 4, seed = 7L)
+  ofemt(
+    ofe_f2,
+    y = "Yield_tn",
+    x = "Treatment",
+    cellsize = 9,
+    min_per_cell = 4,
+    seed = 7L
+  ),
+  ofemt(
+    ofe_f2,
+    y = "Yield_tn",
+    x = "Treatment",
+    cellsize = 9,
+    min_per_cell = 4,
+    seed = 7L
+  )
 )
 #> TRUE
 ```
