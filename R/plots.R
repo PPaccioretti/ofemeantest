@@ -9,6 +9,7 @@
 #' @param data Optional `sf` points overlaid on the grid.
 #'
 #' @return Invisibly returns `NULL`. Called for its side effect (a base R plot).
+#' @importFrom graphics legend
 #' @export
 plot_grid_selection <- function(ofe_grid, data = NULL) {
   stopifnot(inherits(ofe_grid, "ofe_grid"))
@@ -96,7 +97,7 @@ plot_pvalue_hist <- function(results) {
 
   alpha_df <- data.frame(
     x = alpha,
-    label = paste0("α = ", alpha)
+    label = paste0("\u03b1 = ", alpha)
   )
 
   ggplot2::ggplot(

@@ -28,3 +28,4 @@ An object of class `ofe_grid` (a list) with:
 \description{
 Build OFE grid and (initially) select all cells
 }
+\keyword{internal}

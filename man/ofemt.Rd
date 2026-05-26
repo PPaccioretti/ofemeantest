@@ -21,6 +21,7 @@ ofemt(
   grid = NULL,
   angle_deg = 0,
   buffer = 0,
+  seed = 7L,
   alpha_bonferroni = NULL
 )
 }
@@ -49,7 +50,13 @@ instead of `alpha_bonferroni`.}
 
 \item{keep_components}{`"none"`, `"light"`, or `"full"` to embed geometries in output.}
 
-\item{grid}{optional: an `ofe_grid`, a list with `grid_sel`, or an `sf` object of polygons.}
+\item{grid}{optional: an `ofe_grid` (e.g., from [make_ofe_grid()]). If `NULL`,
+the grid is generated internally using `cellsize`, `min_per_cell`,
+`shift`, `angle_deg` and `buffer`, and an informative message is emitted.}
+
+\item{seed}{integer; controls reproducibility of the permutation sampling
+(the grid itself is deterministic from its construction arguments). Set
+`seed = NULL` to let results vary across runs.}
 }
 \value{
 An object of class `ofemt_result`.

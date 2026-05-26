@@ -1,0 +1,58 @@
+url: https://ppaccioretti.github.io/ofemeantest/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+
+development:
+  mode: auto
+
+home:
+  title: ofemeantest — On-Farm Experimentation Mean Test
+  description: >
+    Permutation-based statistical method to support field-specific
+    inferences from spatial data within the context of unreplicated
+    on-farm experimentation.
+
+navbar:
+  structure:
+    left:  [intro, articles, reference, news]
+    right: [search, github]
+  components:
+    intro:
+      text: Get started
+      href: articles/getting-started.html
+    articles:
+      text: Articles
+      menu:
+        - text: User manual
+          href: articles/getting-started.html
+        - text: Methodology
+          href: articles/methodology.html
+    reference:
+      text: Reference
+      href: reference/index.html
+    news:
+      text: Changelog
+      href: news/index.html
+
+reference:
+  - title: Main analysis
+    desc: >
+      The entry point: runs the cell-based permutation analysis end-to-end.
+    contents:
+      - ofemt
+  - title: Grid construction
+    desc: >
+      Build, inspect and customise the spatial grid before passing it
+      to `ofemt()`.
+    contents:
+      - make_ofe_grid
+      - plot_grid_selection
+  - title: Diagnostics and plotting
+    contents:
+      - plot_pvalue_hist
+      - print.ofemt_result
+  - title: Bundled data
+    contents:
+      - ofe_f2

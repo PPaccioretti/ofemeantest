@@ -66,6 +66,7 @@ make_ofe_grid <- function(
 #'     \item `grid_sel`: initially identical to `grid_all` (no filtering yet).
 #'     \item `params`: a named list of grid parameters (cellsize, shift, angle, buffer, CRS).
 #'   }
+#' @keywords internal
 all_cells_grid <- function(
   data,
   cellsize,
@@ -149,6 +150,7 @@ all_cells_grid <- function(
 #'     \item `cell_stats`: a data.frame with per-cell `n_obs`, `n_trt`, and `treatments` list.
 #'     \item `points_sel` (optional): the points that fall in the selected cells.
 #'   }
+#' @keywords internal
 select_grid <- function(
   grid,
   data,
