@@ -58,6 +58,12 @@ plot_grid_selection <- function(ofe_grid, data = NULL) {
 #'
 #' @export
 plot_pvalue_hist <- function(results) {
+  # Declared here to silence R CMD check's "no visible binding for global
+  # variable '.data'" note without adding rlang as an Imports dependency.
+  # ggplot2 still resolves `.data$col` correctly at evaluation time via its
+  # data mask, which shadows this local binding.
+  .data <- NULL
+
   if (!inherits(results, "ofemt_result")) {
     stop("`results` must be an ofemt_result object")
   }

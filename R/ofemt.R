@@ -278,7 +278,8 @@ ofemt <- function(
   # Spatial autocorrelation of residuals + effective sample size
   rho <- spatialreg::aple(cell_sf$residuos, lw)
   rho <- min(1, max(0, rho))
-  MI <- spdep::moran.test(cell_sf$residuos, lw)[[3]][[1]]
+  moran_test <- spdep::moran.test(cell_sf$residuos, lw)
+  MI <- unname(moran_test$estimate["Moran I statistic"])
   n <- nrow(cell_sf)
   ess <- round(n_eff(n = n, rho = rho), 0)
 
