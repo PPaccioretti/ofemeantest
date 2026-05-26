@@ -1,24 +1,29 @@
 #' Plot grid selection (base R)
-#' @param grid_all sf with all grid cells (polygons).
-#' @param grid_sel sf with selected cells. Optional.
-#' @param pts sf points. Optional.
+#'
+#' Quick visual check of an `ofe_grid` object: full grid in grey, selected cells
+#' (those that passed the single-treatment and `min_per_cell` filters) outlined
+#' in black. Optionally overlays the point data.
+#'
+#' @param ofe_grid An object of class `ofe_grid` (typically returned by
+#'   [make_ofe_grid()]).
+#' @param data Optional `sf` points overlaid on the grid.
+#'
+#' @return Invisibly returns `NULL`. Called for its side effect (a base R plot).
 #' @export
-plot_grid_selection <- function(
-  ofe_grid #,
-  # grid_all,
-  # grid_sel = NULL,
-  # pts = NULL
-) {
-  stopifnot(inherits(grid_all, "ofe_grid"))
-  grid_all <- grid[['grid_all']]
-  grid_sel <- grid[['grid_sel']]
+plot_grid_selection <- function(ofe_grid, data = NULL) {
+  stopifnot(inherits(ofe_grid, "ofe_grid"))
+
+  grid_all <- ofe_grid[["grid_all"]]
+  grid_sel <- ofe_grid[["grid_sel"]]
   stopifnot(inherits(grid_all, "sf"))
+
   plot(sf::st_geometry(grid_all), border = "grey85", lwd = 1)
-  if (nrow(grid_sel) > 0) {
+  if (!is.null(grid_sel) && nrow(grid_sel) > 0) {
     plot(sf::st_geometry(grid_sel), add = TRUE, border = "black", lwd = 1.5)
   }
-  if (!is.null(pts)) {
-    plot(sf::st_geometry(pts), add = TRUE, pch = 16, cex = .6)
+  if (!is.null(data)) {
+    stopifnot(inherits(data, "sf"))
+    plot(sf::st_geometry(data), add = TRUE, pch = 16, cex = 0.6)
   }
   legend(
     "topleft",
@@ -28,62 +33,75 @@ plot_grid_selection <- function(
     col = c("grey60", "black", "black"),
     bty = "n"
   )
+  invisible(NULL)
 }
 
 #' Plot histogram(s) of permutation p-values per comparison
 #'
-#' This function produces one or several histograms showing the distribution of
-#' permutation-derived *p*-values for each comparison included in an
-#' [`ofemt_result`] object. A vertical dashed red line indicates the
-#' significance threshold (`alpha`) used during OFE permutation analysis.
+#' Produces one or several histograms showing the distribution of
+#' permutation-derived *p*-values for each comparison contained in an
+#' [`ofemt_result`] object. A dashed red vertical line marks the significance
+#' threshold (`alpha`) used in the analysis.
 #'
-#' @param results An object of class [`ofemt_result`], typically obtained from
-#'   [ofemt()]. It must contain the elements `perm_runs` (a data frame with
-#'   columns `"Comparison"` and `"p_value"`) and `params$alpha`.
+#' @param results An object of class `ofemt_result`, typically obtained from
+#'   [ofemt()]. Must contain `perm_runs` (data frame with `Comparison` and
+#'   `p_value`) and `params$alpha`.
 #'
-#' @return A [`ggplot2`] object representing one or several histograms of
-#'   permutation *p*-values, faceted by comparison, with the alpha threshold
-#'   indicated by a dashed red vertical line.
-#'
-#' @details
-#' Each facet corresponds to a different comparison contained in
-#' `results$perm_runs`. The function automatically adds a legend entry for the
-#' alpha threshold (e.g., `"U+03b1 = 0.05"`) below the comparison legend.
+#' @return A `ggplot` object if **ggplot2** is installed; otherwise the
+#'   function falls back to base R `hist()` and returns `NULL` invisibly.
 #'
 #' @examples
 #' \dontrun{
-#'   # Assuming 'res' is an ofemt_result obtained from ofemt():
-#'   plot_pvalue_hist(res, alpha = 0.05)
+#'   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9)
+#'   plot_pvalue_hist(res)
 #' }
 #'
 #' @export
 plot_pvalue_hist <- function(results) {
-  if (!inherits(x, "ofemt_result")) {
-    stop('results must be an ofemt_result object')
+  if (!inherits(results, "ofemt_result")) {
+    stop("`results` must be an ofemt_result object")
   }
 
-  permitation_runs <- results$perm_runs
-  params_alpha <- results$params$alpha
+  perm_runs <- results$perm_runs
+  alpha <- results$params$alpha
 
   stopifnot(
-    is.data.frame(permitation_runs),
-    all(c("Comparison", "p_value") %in% names(permitation_runs))
+    is.data.frame(perm_runs),
+    all(c("Comparison", "p_value") %in% names(perm_runs))
   )
 
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    # Base R fallback: one panel per comparison
+    comps <- unique(perm_runs$Comparison)
+    op <- graphics::par(mfrow = c(1, length(comps)))
+    on.exit(graphics::par(op), add = TRUE)
+    for (cmp in comps) {
+      graphics::hist(
+        perm_runs$p_value[perm_runs$Comparison == cmp],
+        main = cmp,
+        xlab = "p-value",
+        col = "grey80",
+        border = "white"
+      )
+      graphics::abline(v = alpha, lty = 2, col = "red")
+    }
+    return(invisible(NULL))
+  }
+
   alpha_df <- data.frame(
-    x = params_alpha,
-    label = paste0("\\u03b1 = ", params_alpha)
+    x = alpha,
+    label = paste0("α = ", alpha)
   )
 
   ggplot2::ggplot(
-    permitation_runs,
-    ggplot2::aes(x = p_value, fill = Comparison, colour = Comparison)
+    perm_runs,
+    ggplot2::aes(x = .data$p_value, fill = .data$Comparison, colour = .data$Comparison)
   ) +
     ggplot2::geom_histogram(alpha = 0.5, position = "identity", bins = 30) +
-    ggplot2::facet_wrap(~Comparison, scales = "free_y") +
+    ggplot2::facet_wrap(~ .data$Comparison, scales = "free_y") +
     ggplot2::geom_vline(
       data = alpha_df,
-      ggplot2::aes(xintercept = x, linetype = label),
+      ggplot2::aes(xintercept = .data$x, linetype = .data$label),
       color = "red"
     ) +
     ggplot2::scale_linetype_manual(values = "dashed", name = NULL) +
