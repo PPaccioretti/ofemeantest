@@ -16,8 +16,8 @@ navbar:
       - reference
       - news
     right:
-    - search
-    - github
+      - search
+      - github
   components:
     intro:
       text: Get started
