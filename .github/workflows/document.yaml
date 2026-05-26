@@ -1,0 +1,60 @@
+# Enforces that roxygen-generated man/ and NAMESPACE files are checked in
+# and in sync with their R/ sources. Catches PRs that updated the source
+# but forgot to run devtools::document(), preventing silent drift between
+# the code and the published documentation.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+name: document.yaml
+
+permissions: read-all
+
+jobs:
+  document:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::roxygen2, any::devtools, local::.
+          needs: roxygen2
+
+      - name: Pin roxygen2 to the version recorded in DESCRIPTION
+        run: |
+          ver <- read.dcf("DESCRIPTION")[, "Config/roxygen2/version"]
+          current <- as.character(utils::packageVersion("roxygen2"))
+          if (!is.na(ver) && length(ver) == 1 && nzchar(ver) && current != ver) {
+            cat("Installing roxygen2 ", ver, " (currently ", current, ")\n", sep = "")
+            remotes::install_version("roxygen2", version = ver, repos = "https://cloud.r-project.org")
+          }
+        shell: Rscript {0}
+
+      - name: Regenerate documentation
+        run: roxygen2::roxygenise()
+        shell: Rscript {0}
+
+      - name: Verify man/ NAMESPACE DESCRIPTION are committed and in sync
+        shell: bash
+        run: |
+          if [[ -n "$(git status --porcelain -- man/ NAMESPACE DESCRIPTION)" ]]; then
+            echo "::error::Documentation is out of date. Run devtools::document() locally and commit the changes."
+            echo ""
+            echo "Files that would change:"
+            git status --short -- man/ NAMESPACE DESCRIPTION
+            echo ""
+            echo "Diff:"
+            git --no-pager diff -- man/ NAMESPACE DESCRIPTION
+            exit 1
+          fi
+          echo "Documentation is up to date."

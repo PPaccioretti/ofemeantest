@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Pre-push hook: ensures roxygen documentation in man/ and NAMESPACE is
+# regenerated before every push, so PRs never carry stale Rd files.
+#
+# Activate once per clone with:
+#   git config core.hooksPath .githooks
+#
+# To bypass for a single push (e.g., emergency hotfix):
+#   git push --no-verify
+
+set -e
+
+if ! command -v Rscript >/dev/null 2>&1; then
+  echo "[pre-push] Rscript not found in PATH — skipping doc check." >&2
+  exit 0
+fi
+
+if ! Rscript -e 'requireNamespace("devtools", quietly = TRUE) || quit(status = 1)' >/dev/null 2>&1; then
+  echo "[pre-push] devtools package not installed — skipping doc check." >&2
+  echo "[pre-push] Install it with: install.packages('devtools')" >&2
+  exit 0
+fi
+
+# On Windows, Git Bash sets LC_ALL=C.UTF-8 which native R does not
+# recognise; it then falls back to the "C" locale and mangles non-ASCII
+# author names when re-reading DESCRIPTION. Drop those vars so Rscript
+# inherits the OS-native UTF-8 locale (no-op on Linux/macOS).
+unset LC_ALL LC_CTYPE LANG
+
+echo "[pre-push] Running devtools::document() ..."
+Rscript -e 'suppressMessages(devtools::document(quiet = TRUE))'
+
+# If document() changed anything tracked by git, abort the push and tell
+# the user to commit the regenerated files.
+TRACKED_CHANGED="$(git diff --name-only -- man/ NAMESPACE DESCRIPTION)"
+if [ -n "$TRACKED_CHANGED" ]; then
+  echo "" >&2
+  echo "[pre-push] ERROR: documentation is out of date." >&2
+  echo "[pre-push] devtools::document() regenerated the following files:" >&2
+  echo "$TRACKED_CHANGED" | sed 's/^/  - /' >&2
+  echo "" >&2
+  echo "[pre-push] Stage and commit the changes, then push again:" >&2
+  echo "  git add man/ NAMESPACE DESCRIPTION" >&2
+  echo "  git commit -m 'Regenerate docs'" >&2
+  echo "  git push" >&2
+  exit 1
+fi
+
+echo "[pre-push] Documentation is up to date."

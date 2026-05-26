@@ -4,9 +4,12 @@
 ^data-raw$
 ^README\.Rmd$
 ^\.github$
+^\.githooks$
+^\.gitattributes$
 ^\.claude$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^CONTRIBUTING\.md$
 ^CRAN-SUBMISSION$
 ^cran-comments\.md$
