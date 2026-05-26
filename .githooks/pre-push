@@ -30,14 +30,15 @@ unset LC_ALL LC_CTYPE LANG
 echo "[pre-push] Running devtools::document() ..."
 Rscript -e 'suppressMessages(devtools::document(quiet = TRUE))'
 
-# If document() changed anything tracked by git, abort the push and tell
+# If document() left any unstaged, staged-but-uncommitted, or untracked
+# changes in the generated documentation paths, abort the push and tell
 # the user to commit the regenerated files.
-TRACKED_CHANGED="$(git diff --name-only -- man/ NAMESPACE DESCRIPTION)"
-if [ -n "$TRACKED_CHANGED" ]; then
+DOC_STATUS="$(git status --porcelain -- man/ NAMESPACE DESCRIPTION)"
+if [ -n "$DOC_STATUS" ]; then
   echo "" >&2
   echo "[pre-push] ERROR: documentation is out of date." >&2
-  echo "[pre-push] devtools::document() regenerated the following files:" >&2
-  echo "$TRACKED_CHANGED" | sed 's/^/  - /' >&2
+  echo "[pre-push] devtools::document() regenerated or affected the following files:" >&2
+  echo "$DOC_STATUS" | sed 's/^.. /  - /' >&2
   echo "" >&2
   echo "[pre-push] Stage and commit the changes, then push again:" >&2
   echo "  git add man/ NAMESPACE DESCRIPTION" >&2
