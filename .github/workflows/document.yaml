@@ -32,11 +32,16 @@ jobs:
 
       - name: Pin roxygen2 to the version recorded in DESCRIPTION
         run: |
-          ver <- read.dcf("DESCRIPTION")[, "Config/roxygen2/version"]
+          desc <- read.dcf("DESCRIPTION")
           current <- as.character(utils::packageVersion("roxygen2"))
-          if (!is.na(ver) && length(ver) == 1 && nzchar(ver) && current != ver) {
-            cat("Installing roxygen2 ", ver, " (currently ", current, ")\n", sep = "")
-            remotes::install_version("roxygen2", version = ver, repos = "https://cloud.r-project.org")
+          if ("Config/roxygen2/version" %in% colnames(desc)) {
+            ver <- desc[, "Config/roxygen2/version"]
+            if (!is.na(ver) && length(ver) == 1 && nzchar(ver) && current != ver) {
+              cat("Installing roxygen2 ", ver, " (currently ", current, ")\n", sep = "")
+              remotes::install_version("roxygen2", version = ver, repos = "https://cloud.r-project.org")
+            }
+          } else {
+            cat("No Config/roxygen2/version field found in DESCRIPTION; skipping roxygen2 pinning.\n")
           }
         shell: Rscript {0}
 
