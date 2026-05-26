@@ -1,0 +1,4 @@
+# Keep shell scripts (e.g. git hooks) with LF endings on all platforms;
+# bash refuses to interpret scripts with CRLF.
+.githooks/* text eol=lf
+*.sh        text eol=lf

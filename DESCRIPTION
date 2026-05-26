@@ -16,7 +16,6 @@ Description: Permutation-based statistical method to support field-specific
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.3
 Imports:
     multcompView,
     permuco,
@@ -35,3 +34,5 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://ppaccioretti.github.io/ofemeantest/, https://github.com/PPaccioretti/ofemeantest
 BugReports: https://github.com/PPaccioretti/ofemeantest/issues
+Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.3

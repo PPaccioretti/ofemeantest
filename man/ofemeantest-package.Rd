@@ -22,6 +22,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Mariano Córdoba \email{marianoacba@agro.unc.edu.ar}
   \item Pablo Paccioretti \email{pablopaccioretti@agro.unc.edu.ar}
   \item Monica Balzarini \email{mbalzari@agro.unc.edu.ar}
 }

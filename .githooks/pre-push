@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Pre-push hook: ensures roxygen documentation in man/ and NAMESPACE is
+# regenerated before every push, so PRs never carry stale Rd files.
+#
+# Activate once per clone with:
+#   git config core.hooksPath .githooks
+#
+# To bypass for a single push (e.g., emergency hotfix):
+#   git push --no-verify
+
+set -e
+
+if ! command -v Rscript >/dev/null 2>&1; then
+  echo "[pre-push] Rscript not found in PATH — skipping doc check." >&2
+  exit 0
+fi
+
+if ! Rscript -e 'requireNamespace("devtools", quietly = TRUE) || quit(status = 1)' >/dev/null 2>&1; then
+  echo "[pre-push] devtools package not installed — skipping doc check." >&2
+  echo "[pre-push] Install it with: install.packages('devtools')" >&2
+  exit 0
+fi
+
+# On Windows, Git Bash may set locale vars to C.UTF-8, which native R does
+# not recognise; it then falls back to the "C" locale and mangles non-ASCII
+# author names when re-reading DESCRIPTION. Only drop those vars when
+# running under Git Bash on Windows and they are set to that problematic
+# value, so valid UTF-8 locales on Linux/macOS are preserved.
+case "$(uname -s)" in
+  MSYS*|MINGW*)
+    [ "${LC_ALL-}" = "C.UTF-8" ] && unset LC_ALL
+    [ "${LC_CTYPE-}" = "C.UTF-8" ] && unset LC_CTYPE
+    [ "${LANG-}" = "C.UTF-8" ] && unset LANG
+    ;;
+esac
+
+echo "[pre-push] Running devtools::document() ..."
+Rscript -e 'suppressMessages(devtools::document(quiet = TRUE))'
+
+# If document() left any unstaged, staged-but-uncommitted, or untracked
+# changes in the generated documentation paths, abort the push and tell
+# the user to commit the regenerated files.
+DOC_STATUS="$(git status --porcelain -- man/ NAMESPACE DESCRIPTION)"
+if [ -n "$DOC_STATUS" ]; then
+  echo "" >&2
+  echo "[pre-push] ERROR: documentation is out of date." >&2
+  echo "[pre-push] devtools::document() regenerated or affected the following files:" >&2
+  echo "$DOC_STATUS" | sed 's/^.. /  - /' >&2
+  echo "" >&2
+  echo "[pre-push] Stage and commit the changes, then push again:" >&2
+  echo "  git add man/ NAMESPACE DESCRIPTION" >&2
+  echo "  git commit -m 'Regenerate docs'" >&2
+  echo "  git push" >&2
+  exit 1
+fi
+
+echo "[pre-push] Documentation is up to date."
