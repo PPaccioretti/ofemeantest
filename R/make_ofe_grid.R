@@ -172,10 +172,7 @@ select_grid <- function(
   if (!x %in% names(data)) {
     stop(sprintf("Column '%s' not found in data.", x))
   }
-  data <- data |>
-    dplyr::mutate(
-      .trt = gsub("\\s+", ".", .data[[x]])
-    )
+  data$.trt <- gsub("\\s+", ".", data[[x]])
 
   # CRS check
   if (
@@ -188,31 +185,37 @@ select_grid <- function(
   # Join: bring CellID to points
   pts_join <- sf::st_join(
     data,
-    grid_sf[, c("CellID")],
+    grid_sf[, "CellID"],
     left = FALSE # keep only points that fall in some cell
   )
 
-  # Per-cell stats
-  cell_stats <- pts_join |>
-    sf::st_drop_geometry() |>
-    dplyr::group_by(.data$CellID) |>
-    dplyr::summarise(
-      n_obs = dplyr::n(),
-      n_trt = dplyr::n_distinct(.data$.trt),
-      treatments = list(sort(unique(.data$.trt))),
-      .groups = "drop"
-    )
+  # Per-cell stats: split treatment vector by CellID
+  trt_by_cell <- split(
+    sf::st_drop_geometry(pts_join)$.trt,
+    sf::st_drop_geometry(pts_join)$CellID
+  )
+  cell_stats <- data.frame(
+    CellID = as.integer(names(trt_by_cell)),
+    n_obs  = lengths(trt_by_cell),
+    n_trt  = vapply(trt_by_cell, function(z) length(unique(z)), integer(1)),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+  cell_stats$treatments <- unname(lapply(trt_by_cell, function(z) sort(unique(z))))
 
-  # Merge counts back to grid, compute selection
+  # Merge counts back to grid (preserve grid_all row order via match())
   grid_all <- grid_sf
   grid_all$n_obs <- NULL
-  grid_all <- dplyr::left_join(grid_all, cell_stats, by = "CellID")
+  m <- match(grid_all$CellID, cell_stats$CellID)
+  grid_all$n_obs      <- cell_stats$n_obs[m]
+  grid_all$n_trt      <- cell_stats$n_trt[m]
+  grid_all$treatments <- cell_stats$treatments[m]
   grid_all$n_obs[is.na(grid_all$n_obs)] <- 0L
   grid_all$n_trt[is.na(grid_all$n_trt)] <- 0L
 
-  keep_ids <- cell_stats |>
-    dplyr::filter(.data$n_obs >= min_per_cell, .data$n_trt == 1) |>
-    dplyr::pull(.data$CellID)
+  keep_ids <- cell_stats$CellID[
+    cell_stats$n_obs >= min_per_cell & cell_stats$n_trt == 1
+  ]
 
   grid_sel <- grid_all[grid_all$CellID %in% keep_ids, , drop = FALSE]
 

@@ -46,7 +46,6 @@
 #' treatments in unreplicated on-farm experimentation. Córdoba M.,
 #' Paccioretti P., Balzarini M. Under review.
 #'
-#' @importFrom magrittr %>%
 #' @export
 #'
 #' @examples
