@@ -53,22 +53,33 @@ instead of `alpha_bonferroni`.}
 }
 \value{
 An object of class `ofemt_result`.
+
+a list of length 4 with mean test comparisson results
 }
 \description{
 Runs a cell-based OFE analysis with permutation ANOVA and spatial diagnostics.
 }
 \details{
-Both `nmin_cell` and `alpha_bonferroni` are retained for backward compatibility
-but will be removed in a future release.
-Use `min_per_cell` to define the minimum number of observations per grid cell,
-and control Bonferroni correction through the argument `p_adjust_method`.
+The methodology involves:
+\enumerate{
+  \item calculation of effective sample size (ESS) given the underlying spatial
+structure.
+  \item ANOVA permutation test on a random sample of ESS.
+  \item generation of the empirical distribution of p-values from repetition of
+step two. The median of this empirical distribution is regarded as the
+p-value associated with the non-treatment effect hypothesis.
+}
+The test can be easily extended to cover scenarios with more than two
+treatments by employing pairwise comparisons of OFE across multiple
+treatments, with p-values can be adjusted for multiplicity
+using Bonferroni correction
 }
 \examples{
-data("ofe_f2", package = "ofemeantest")
-ofemt(data = ofe_f2,
-      y = "Yield_tn",
-      x = "Treatment")
-
+\dontrun{
+  my_data <- ofe_f2
+  res <- ofemt(my_data, y = "Yield", x = "Treatment",
+               cellsize = 10, min_per_cell = 4, alpha = 0.05)
+}
 }
 \references{
 A new method to compare

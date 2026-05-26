@@ -204,13 +204,11 @@ select_grid <- function(
     )
 
   # Merge counts back to grid, compute selection
-  grid_all <- grid_sf |>
-    dplyr::select(-'n_obs') |>
-    dplyr::left_join(cell_stats, by = "CellID") |>
-    dplyr::mutate(
-      n_obs = tidyr::replace_na(.data$n_obs, 0L),
-      n_trt = tidyr::replace_na(.data$n_trt, 0L)
-    )
+  grid_all <- grid_sf
+  grid_all$n_obs <- NULL
+  grid_all <- dplyr::left_join(grid_all, cell_stats, by = "CellID")
+  grid_all$n_obs[is.na(grid_all$n_obs)] <- 0L
+  grid_all$n_trt[is.na(grid_all$n_trt)] <- 0L
 
   keep_ids <- cell_stats |>
     dplyr::filter(.data$n_obs >= min_per_cell, .data$n_trt == 1) |>
