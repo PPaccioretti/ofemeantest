@@ -25,6 +25,13 @@ Imports:
     spdep,
     withr
 Suggests:
-    ggplot2
+    ggplot2,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
 Depends:
     R (>= 4.1.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+URL: https://ppaccioretti.github.io/ofemeantest/, https://github.com/PPaccioretti/ofemeantest
+BugReports: https://github.com/PPaccioretti/ofemeantest/issues

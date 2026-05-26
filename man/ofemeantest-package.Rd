@@ -8,6 +8,15 @@
 \description{
 Permutation-based statistical method to support field-specific inferences from spatial data within the context of unreplicated OFE.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://ppaccioretti.github.io/ofemeantest/}
+  \item \url{https://github.com/PPaccioretti/ofemeantest}
+  \item Report bugs at \url{https://github.com/PPaccioretti/ofemeantest/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Mariano Córdoba \email{marianoacba@agro.unc.edu.ar}
 

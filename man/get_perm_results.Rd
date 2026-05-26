@@ -15,3 +15,4 @@ data.frame with columns Comparison, p_value, run, etc.
 \description{
 Get permutation runs
 }
+\keyword{internal}

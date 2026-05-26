@@ -8,6 +8,7 @@
 #' @param n integer, nominal sample size.
 #' @param rho numeric in [0, 1], spatial autocorrelation intensity.
 #' @return numeric, effective sample size.
+#' @keywords internal
 n_eff <- function(n, rho) {
   a <- 1 / (1 - exp(-1.92369))
   b <- (n - 1) / n
@@ -18,6 +19,7 @@ n_eff <- function(n, rho) {
 #' Get permutation runs
 #' @param x ofemt_result
 #' @return data.frame with columns Comparison, p_value, run, etc.
+#' @keywords internal
 get_perm_results <- function(x) {
   stopifnot(inherits(x, "ofemt_result"))
   x$perm_runs

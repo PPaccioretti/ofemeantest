@@ -1,0 +1,162 @@
+---
+title: "Getting started with ofemeantest"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with ofemeantest}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 4
+)
+```
+
+`ofemeantest` implements a cell-based, permutation-based protocol to
+compare treatments in **unreplicated on-farm experiments** (OFE) where
+strips of management are laid out side-by-side over a field and yield is
+recorded densely (e.g., from a yield monitor).
+
+The package handles three things:
+
+1. **Build a regular grid** over the trial and aggregate the dense point
+   data into cell-level medians, keeping only cells that fall inside a
+   single treatment strip and contain enough observations.
+2. **Estimate the effective sample size (ESS)** from the spatial
+   autocorrelation of the residuals of a one-way ANOVA on cell medians,
+   to avoid pseudo-replication from spatially correlated data.
+3. **Test treatment differences** with a permutational ANOVA, repeated
+   over many random subsamples of size ESS, and report the median
+   *p*-value as the field-specific test result.
+
+## Installation
+
+```{r install, eval = FALSE}
+# install.packages("pak")
+pak::pkg_install("PPaccioretti/ofemeantest")
+```
+
+## A worked example
+
+The bundled `ofe_f2` dataset comes from a corn (Zea mays L.) trial where
+a single fertilized strip (~2.2 ha) was compared against an adjacent
+control strip on the same field. Raw yield-monitor data were cleaned
+following Vega et al. (2019).
+
+```{r load}
+library(ofemeantest)
+data("ofe_f2")
+
+ofe_f2
+```
+
+### Quick run
+
+Call `ofemt()` and let it build the grid internally:
+
+```{r quick, message = FALSE, warning = FALSE}
+res <- ofemt(
+  data         = ofe_f2,
+  y            = "Yield_tn",
+  x            = "Treatment",
+  cellsize     = 9,
+  min_per_cell = 4,
+  n_p          = 2000,
+  n_s          = 200,
+  alpha        = 0.05
+)
+res
+```
+
+Key fields in the printed result:
+
+- **Selected cells**: cells retained after filtering by single
+  treatment and `min_per_cell`.
+- **n / ESS**: nominal sample size and effective sample size given
+  the spatial autocorrelation of the residuals.
+- **Rho / Moran's I**: spatial autocorrelation indicators.
+- **Means comparison**: per-treatment median yield (in cells) and
+  compact letter display from the multiple-comparison procedure.
+- **ANOVA permutation test**: median *p*-value per pairwise comparison.
+
+### Step-by-step
+
+For finer control — inspecting the grid, tweaking the cell size, or
+reusing the same selection in several downstream analyses — build the
+grid explicitly with `make_ofe_grid()` and pass it to `ofemt()`.
+
+```{r stepwise, message = FALSE, warning = FALSE}
+g <- make_ofe_grid(
+  data         = ofe_f2,
+  x            = "Treatment",
+  cellsize     = 9,
+  min_per_cell = 4
+)
+g
+
+plot_grid_selection(g)
+
+res2 <- ofemt(
+  data = ofe_f2,
+  y    = "Yield_tn",
+  x    = "Treatment",
+  grid = g,
+  n_p  = 2000,
+  n_s  = 200
+)
+```
+
+Both calls produce the same numeric output when the grid is built with
+matching arguments — `ofemt(grid = NULL, ...)` is equivalent to
+`ofemt(grid = make_ofe_grid(...))` under the hood.
+
+### Reproducibility
+
+`ofemt()` exposes a `seed` argument that controls the random subsampling
+inside the permutation runs. The default is `seed = 7L`, so two calls
+with the same inputs return identical p-values:
+
+```{r seed, eval = FALSE}
+identical(
+  ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9, min_per_cell = 4, seed = 7L),
+  ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9, min_per_cell = 4, seed = 7L)
+)
+#> TRUE
+```
+
+Pass `seed = NULL` to let results vary across runs (e.g., when
+exploring sensitivity to the random draws).
+
+### Inspecting the permutation distribution
+
+Each call retains the per-run *p*-values in `res$perm_runs` so you can
+sanity-check that the median *p*-value is not an artefact of a long
+tail:
+
+```{r hist, eval = FALSE}
+# Requires the optional 'ggplot2' package.
+plot_pvalue_hist(res)
+```
+
+## Where to go next
+
+- `vignette("methodology")` — technical description of the protocol
+  (effective sample size, permutational ANOVA, multiplicity adjustment).
+- `?ofemt` — full argument reference for the main function.
+- `?make_ofe_grid` — details on grid construction and selection.
+
+## References
+
+- Córdoba M., Paccioretti P., Balzarini M. (in review). A new method
+  to compare treatments in unreplicated on-farm experimentation.
+- Griffith, D.A. (2005). Effective geographic sample size in the
+  presence of spatial autocorrelation. *Annals of the Association of
+  American Geographers* 95(4): 740–760.
+- Vega A., Córdoba M., Balzarini M. (2019). Protocol for automating
+  error removal from yield maps. *Precision Agriculture* 20: 1030–1044.
+  <https://doi.org/10.1007/s11119-018-09632-8>

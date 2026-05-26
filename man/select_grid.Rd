@@ -29,3 +29,4 @@ An `ofe_grid` (list) with updated `grid_sel` and `params`. Adds:
 Spatially joins points to the grid, counts observations and distinct treatments
 per cell, and keeps only cells that satisfy both thresholds.
 }
+\keyword{internal}

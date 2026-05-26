@@ -4,15 +4,19 @@
 \alias{plot_grid_selection}
 \title{Plot grid selection (base R)}
 \usage{
-plot_grid_selection(ofe_grid)
+plot_grid_selection(ofe_grid, data = NULL)
 }
 \arguments{
-\item{grid_all}{sf with all grid cells (polygons).}
+\item{ofe_grid}{An object of class `ofe_grid` (typically returned by
+[make_ofe_grid()]).}
 
-\item{grid_sel}{sf with selected cells. Optional.}
-
-\item{pts}{sf points. Optional.}
+\item{data}{Optional `sf` points overlaid on the grid.}
+}
+\value{
+Invisibly returns `NULL`. Called for its side effect (a base R plot).
 }
 \description{
-Plot grid selection (base R)
+Quick visual check of an `ofe_grid` object: full grid in grey, selected cells
+(those that passed the single-treatment and `min_per_cell` filters) outlined
+in black. Optionally overlays the point data.
 }
