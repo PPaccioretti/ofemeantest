@@ -66,6 +66,7 @@ cell boundaries is the quickest way to judge the effect of `cellsize`,
 <span>  points <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  main <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  legend_pos <span class="op">=</span> <span class="st">"topleft"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -89,13 +90,17 @@ under `keep_components = "full"`.</p></dd>
 
 
 <dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
-<dd><p>Optional `sf` points to overlay. Only needed for an `ofe_grid`,
-which does not carry the observations; for an `ofemt_result` it defaults
-to the stored `points_joined` and passing it explicitly overrides that.</p></dd>
+<dd><p>Optional `sf` points to overlay. Rarely needed: the observations
+are taken from the object itself — `points_sel` for an `ofe_grid` built
+with `make_ofe_grid(return_points = TRUE)`, `points_joined` for an
+`ofemt_result` run with `keep_components = "full"`. Pass `data` when the
+object carries no points, or to override the stored ones.</p></dd>
 
 
 <dt id="arg-points">points<a class="anchor" aria-label="anchor" href="#arg-points"></a></dt>
-<dd><p>Logical; set to `FALSE` to skip the point layer.</p></dd>
+<dd><p>Logical; set to `FALSE` to skip the point layer. When `TRUE`
+(the default) and no observations are available, a message explains how to
+obtain them rather than silently drawing a grid without points.</p></dd>
 
 
 <dt id="arg-main">main<a class="anchor" aria-label="anchor" href="#arg-main"></a></dt>
@@ -105,6 +110,11 @@ parameters, which is what makes successive calls comparable.</p></dd>
 
 <dt id="arg-legend">legend<a class="anchor" aria-label="anchor" href="#arg-legend"></a></dt>
 <dd><p>Logical; draw the legend. Default `TRUE`.</p></dd>
+
+
+<dt id="arg-legend-pos">legend_pos<a class="anchor" aria-label="anchor" href="#arg-legend-pos"></a></dt>
+<dd><p>Where to place the legend, passed to [graphics::legend()]
+(e.g. `"topleft"`, `"bottomright"`, or `"top"`). Default `"topleft"`.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

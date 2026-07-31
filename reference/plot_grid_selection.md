@@ -17,6 +17,7 @@ plot_grid_selection(
   points = TRUE,
   main = NULL,
   legend = TRUE,
+  legend_pos = "topleft",
   ...
 )
 
@@ -40,14 +41,18 @@ plot(x, ...)
 
 - data:
 
-  Optional \`sf\` points to overlay. Only needed for an \`ofe_grid\`,
-  which does not carry the observations; for an \`ofemt_result\` it
-  defaults to the stored \`points_joined\` and passing it explicitly
-  overrides that.
+  Optional \`sf\` points to overlay. Rarely needed: the observations are
+  taken from the object itself — \`points_sel\` for an \`ofe_grid\`
+  built with \`make_ofe_grid(return_points = TRUE)\`, \`points_joined\`
+  for an \`ofemt_result\` run with \`keep_components = "full"\`. Pass
+  \`data\` when the object carries no points, or to override the stored
+  ones.
 
 - points:
 
-  Logical; set to \`FALSE\` to skip the point layer.
+  Logical; set to \`FALSE\` to skip the point layer. When \`TRUE\` (the
+  default) and no observations are available, a message explains how to
+  obtain them rather than silently drawing a grid without points.
 
 - main:
 
@@ -57,6 +62,12 @@ plot(x, ...)
 - legend:
 
   Logical; draw the legend. Default \`TRUE\`.
+
+- legend_pos:
+
+  Where to place the legend, passed to \[graphics::legend()\] (e.g.
+  \`"topleft"\`, \`"bottomright"\`, or \`"top"\`). Default
+  \`"topleft"\`.
 
 - ...:
 
