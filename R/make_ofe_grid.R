@@ -170,11 +170,13 @@ select_grid <- function(
   }
   stopifnot(inherits(grid_sf, "sf"), "CellID" %in% names(grid_sf))
 
-  # Normalize treatment labels and ensure column exists
+  # Ensure the treatment column exists. Labels are used verbatim: rewriting
+  # them (e.g. spaces to dots) can collapse two genuinely different treatments
+  # into one and make a mixed cell look single-treatment.
   if (!x %in% names(data)) {
     stop(sprintf("Column '%s' not found in data.", x))
   }
-  data$.trt <- gsub("\\s+", ".", data[[x]])
+  data$.trt <- as.character(data[[x]])
 
   # CRS check
   if (

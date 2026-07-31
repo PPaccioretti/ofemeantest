@@ -44,9 +44,11 @@ print.ofemt_result <- function(x, ...) {
   cat("\n=== OFE permutation analysis ===\n")
 
   if (is.data.frame(gi)) {
+    total <- if ("Total.Cells" %in% names(gi)) gi$Total.Cells[1] else NA
     cat(sprintf(
-      "Cellsize: %s | Selected cells: %d\n",
+      "Cellsize: %s | %sSelected cells: %d\n",
       gi$Cellsize[1],
+      if (is.na(total)) "" else sprintf("Total cells: %d | ", total),
       gi$Selected.Cells[1]
     ))
     cat(sprintf(
@@ -65,15 +67,21 @@ print.ofemt_result <- function(x, ...) {
   }
 
   if (!is.null(x[["Means comparison"]])) {
-    cat("\n--- Means comparison ---\n")
+    cat("\n--- Means comparison (sorted by decreasing mean) ---\n")
     print(utils::head(x[["Means comparison"]], 10), row.names = FALSE)
     if (nrow(x[["Means comparison"]]) > 10) cat("... (truncated)\n")
   }
 
   if (!is.null(x[["ANOVA permutation test"]])) {
-    cat(
-      "\n--- Pairwise tests (median p-value across runs, corrected p-value) ---\n"
-    )
+    adj <- x[["params"]][["p_adjust_method"]]
+    cat(sprintf(
+      "\n--- Pairwise tests (median p across runs%s) ---\n",
+      if (is.null(adj) || identical(adj, "none")) {
+        ""
+      } else {
+        sprintf("; p_adj = median of per-run %s-adjusted p", adj)
+      }
+    ))
     print(x[["ANOVA permutation test"]], row.names = FALSE)
   }
 

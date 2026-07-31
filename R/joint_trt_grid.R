@@ -49,7 +49,7 @@ filter_per_treatment <- function(data, grid, x) {
 
   grid_sel <- grid$grid_sel
 
-  data[[".trt"]] <- gsub(" ", ".", as.character(data[[x]]))
+  data[[".trt"]] <- as.character(data[[x]])
   if (!"CellID" %in% names(grid_sel)) {
     grid_sel$CellID <- seq_len(nrow(grid_sel))
   }

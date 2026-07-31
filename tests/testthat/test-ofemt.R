@@ -156,53 +156,168 @@ test_that("ofemt() errors when fewer than two treatments are present", {
   )
 })
 
-test_that("nmin_cell and alpha_bonferroni emit deprecation warnings", {
+test_that("nmin_cell and alpha_bonferroni are gone", {
   skip_if_no_spatial_deps()
   data("ofe_f2", package = "ofemeantest", envir = environment())
 
-  # Use withCallingHandlers to swallow the (unrelated) spdep sub-graph
-  # warnings but let the deprecation warning bubble up to expect_warning().
-  swallow_spdep <- function(expr) {
-    withCallingHandlers(
-      expr,
-      warning = function(w) {
-        if (grepl("sub-graphs", conditionMessage(w))) {
-          invokeRestart("muffleWarning")
-        }
-      }
-    )
+  expect_error(
+    ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9, nmin_cell = 4),
+    "unused argument"
+  )
+  expect_error(
+    ofemt(
+      ofe_f2,
+      y = "Yield_tn",
+      x = "Treatment",
+      cellsize = 9,
+      alpha_bonferroni = TRUE
+    ),
+    "unused argument"
+  )
+})
+
+test_that("ofemt() does not leak spdep's sub-graph connectivity warnings", {
+  skip_if_no_spatial_deps()
+  data("ofe_f2", package = "ofemeantest", envir = environment())
+
+  warnings_seen <- character()
+  withCallingHandlers(
+    suppressMessages(ofemt(
+      data = ofe_f2,
+      y = "Yield_tn",
+      x = "Treatment",
+      cellsize = 9,
+      min_per_cell = 4,
+      n_p = 20,
+      n_s = 3,
+      seed = 7L
+    )),
+    warning = function(w) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_false(any(grepl("sub-?graph", warnings_seen)))
+})
+
+test_that("treatment labels with special characters survive intact", {
+  skip_if_no_spatial_deps()
+
+  pts <- make_toy_ofe()
+  # Labels with a space, a "+", a "-" and parentheses: every separator
+  # multcompView and formula parsing could trip on.
+  pts$Treatment <- ifelse(
+    pts$Treatment == "Control",
+    "Testigo (0 kg)",
+    "Bortrac + Zin-trac"
+  )
+
+  res <- suppressMessages(suppressWarnings(ofemt(
+    pts,
+    y = "Yield_tn",
+    x = "Treatment",
+    cellsize = 20,
+    min_per_cell = 1,
+    n_p = 50,
+    n_s = 5,
+    seed = 1L
+  )))
+
+  mc <- res[["Means comparison"]]
+  expect_setequal(mc$Treatment, c("Testigo (0 kg)", "Bortrac + Zin-trac"))
+  expect_false(anyNA(mc$letters))
+  expect_equal(
+    res[["ANOVA permutation test"]]$Comparison,
+    "Bortrac + Zin-trac vs. Testigo (0 kg)"
+  )
+  expect_setequal(names(res[["Cells per treatment"]]), mc$Treatment)
+})
+
+test_that("compact letters follow the ordering of the means", {
+  skip_if_no_spatial_deps()
+  data("ofe_f2", package = "ofemeantest", envir = environment())
+
+  res <- suppressMessages(suppressWarnings(ofemt(
+    data = ofe_f2,
+    y = "Yield_tn",
+    x = "Treatment",
+    cellsize = 9,
+    min_per_cell = 4,
+    n_p = 100,
+    n_s = 10,
+    seed = 7L
+  )))
+
+  mc <- res[["Means comparison"]]
+  # Means come out in decreasing order ...
+  expect_false(is.unsorted(rev(mc$Yield_tn_mean)))
+  # ... and the first (highest) group always carries the first letter.
+  expect_true(grepl("a", mc$letters[1], fixed = TRUE))
+})
+
+test_that("p_adj is the median of the per-run adjusted p-values", {
+  skip_if_no_spatial_deps()
+  data("ofe_f2", package = "ofemeantest", envir = environment())
+
+  res <- suppressMessages(suppressWarnings(ofemt(
+    data = ofe_f2,
+    y = "Yield_tn",
+    x = "Treatment",
+    cellsize = 9,
+    min_per_cell = 4,
+    n_p = 100,
+    n_s = 10,
+    seed = 7L,
+    p_adjust_method = "bonferroni"
+  )))
+
+  expect_true("p_adj" %in% names(res$perm_runs))
+  tbl <- res[["ANOVA permutation test"]]
+  by_hand <- vapply(
+    tbl$Comparison,
+    function(cmp) {
+      stats::median(res$perm_runs$p_adj[res$perm_runs$Comparison == cmp])
+    },
+    numeric(1)
+  )
+  expect_equal(tbl$p_adj, unname(by_hand))
+})
+
+test_that("keep_components controls the embedded geometries", {
+  skip_if_no_spatial_deps()
+
+  pts <- make_toy_ofe()
+  run <- function(keep) {
+    suppressMessages(suppressWarnings(ofemt(
+      pts,
+      y = "Yield_tn",
+      x = "Treatment",
+      cellsize = 20,
+      min_per_cell = 1,
+      n_p = 20,
+      n_s = 3,
+      seed = 1L,
+      keep_components = keep
+    )))
   }
 
-  expect_warning(
-    suppressMessages(swallow_spdep(
-      ofemt(
-        ofe_f2,
-        y = "Yield_tn",
-        x = "Treatment",
-        cellsize = 9,
-        nmin_cell = 4,
-        n_p = 50,
-        n_s = 5,
-        seed = 1L
-      )
-    )),
-    "nmin_cell.*deprecated"
-  )
+  none <- run("none")
+  expect_null(none$grid)
+  expect_null(none$cell_medians)
+  expect_null(none$points_joined)
 
-  expect_warning(
-    suppressMessages(swallow_spdep(
-      ofemt(
-        ofe_f2,
-        y = "Yield_tn",
-        x = "Treatment",
-        cellsize = 9,
-        min_per_cell = 4,
-        n_p = 50,
-        n_s = 5,
-        seed = 1L,
-        alpha_bonferroni = TRUE
-      )
-    )),
-    "alpha_bonferroni.*deprecated"
-  )
+  light <- run("light")
+  expect_s3_class(light$grid, "ofe_grid")
+  expect_s3_class(light$grid$grid_all, "sf")
+  expect_s3_class(light$grid$grid_sel, "sf")
+  expect_null(light$cell_medians)
+  expect_null(light$points_joined)
+
+  full <- run("full")
+  expect_s3_class(full$grid, "ofe_grid")
+  expect_s3_class(full$cell_medians, "sf")
+  expect_s3_class(full$points_joined, "sf")
+  expect_true("residuos" %in% names(full$cell_medians))
+  expect_true("CellID" %in% names(full$points_joined))
 })
