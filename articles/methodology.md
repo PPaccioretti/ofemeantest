@@ -76,13 +76,34 @@ The reported test statistic for the comparison is the **median** of the
 ## 5. Multiple comparisons
 
 When the trial contains more than two treatments, every pairwise
-comparison is tested as above and the resulting median *p*-values are
-adjusted for multiplicity via
+comparison is tested as above and the results are adjusted for
+multiplicity via
 [`stats::p.adjust()`](https://rdrr.io/r/stats/p.adjust.html)
 (Bonferroni, Holm or Benjamini–Hochberg, selected by the
-`p_adjust_method` argument). A compact letter display is then computed
-from the adjusted *p*-values with
+`p_adjust_method` argument).
+
+The adjustment is applied **within each run**, across the
+\\\binom{k}{2}\\ comparisons produced by that run, and the reported
+`p_adj` is the *median of the adjusted values*. Adjusting inside the run
+keeps the two summaries on the same footing: `p_value` and `p_adj` are
+both medians of a genuine empirical distribution over the `n_s` runs,
+and the median line drawn by
+[`plot_pvalue_hist()`](https://ppaccioretti.github.io/ofemeantest/reference/plot_pvalue_hist.md)
+is exactly the value reported in the table. (Adjusting the median
+instead — the reverse order — would mix a summary statistic with a
+correction computed from a single vector of medians, and the histogram
+could then disagree with the table.) Both per-run quantities are kept in
+`res$perm_runs` as `p_value` and `p_adj`.
+
+A compact letter display is then computed from the adjusted *p*-values
+with
 [`multcompView::multcompLetters()`](https://lselzer.github.io/multcompView/reference/multcompLetters.html).
+Treatments are ordered by decreasing median response before the letters
+are assigned, so `"a"` marks the highest-yielding group and the letters
+read monotonically down the `Means comparison` table. Treatment labels
+are swapped for internal placeholders before the letters are computed
+and restored afterwards, so labels containing spaces, `+`, `-`,
+parentheses or accents are reported verbatim.
 
 ## 6. Assumptions and limitations
 

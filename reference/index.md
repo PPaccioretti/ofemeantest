@@ -15,7 +15,9 @@ Build, inspect and customise the spatial grid before passing it to
 - [`make_ofe_grid()`](https://ppaccioretti.github.io/ofemeantest/reference/make_ofe_grid.md)
   : Create an OFE grid and select valid cells
 - [`plot_grid_selection()`](https://ppaccioretti.github.io/ofemeantest/reference/plot_grid_selection.md)
-  : Plot grid selection (base R)
+  [`plot(`*`<ofe_grid>`*`)`](https://ppaccioretti.github.io/ofemeantest/reference/plot_grid_selection.md)
+  [`plot(`*`<ofemt_result>`*`)`](https://ppaccioretti.github.io/ofemeantest/reference/plot_grid_selection.md)
+  : Plot the grid, the selected cells and the observations
 
 ## Diagnostics and plotting
 

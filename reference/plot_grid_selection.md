@@ -1,27 +1,86 @@
-# Plot grid selection (base R)
+# Plot the grid, the selected cells and the observations
 
-Quick visual check of an \`ofe_grid\` object: full grid in grey,
-selected cells (those that passed the single-treatment and
-\`min_per_cell\` filters) outlined in black. Optionally overlays the
-point data.
+Draws the three layers that matter when tuning a grid, on one set of
+axes: the \*\*full grid\*\* in light grey, the \*\*selected cells\*\*
+(those that passed the single-treatment and \`min_per_cell\` filters)
+shaded and outlined in black, and the \*\*observations\*\* as points.
+Seeing the points against the cell boundaries is the quickest way to
+judge the effect of \`cellsize\`, \`shift\`, \`angle_deg\` and
+\`buffer\`.
 
 ## Usage
 
 ``` r
-plot_grid_selection(ofe_grid, data = NULL)
+plot_grid_selection(
+  x,
+  data = NULL,
+  points = TRUE,
+  main = NULL,
+  legend = TRUE,
+  ...
+)
+
+# S3 method for class 'ofe_grid'
+plot(x, ...)
+
+# S3 method for class 'ofemt_result'
+plot(x, ...)
 ```
 
 ## Arguments
 
-- ofe_grid:
+- x:
 
-  An object of class \`ofe_grid\` (typically returned by
-  \[make_ofe_grid()\]).
+  Either an \`ofe_grid\` (from \[make_ofe_grid()\]) or an
+  \`ofemt_result\` (from \[ofemt()\]) that was run with
+  \`keep_components = "light"\` or \`"full"\`. With an \`ofemt_result\`
+  every layer is taken from the object itself, so no extra arguments are
+  needed; the points are only available under \`keep_components =
+  "full"\`.
 
 - data:
 
-  Optional \`sf\` points overlaid on the grid.
+  Optional \`sf\` points to overlay. Only needed for an \`ofe_grid\`,
+  which does not carry the observations; for an \`ofemt_result\` it
+  defaults to the stored \`points_joined\` and passing it explicitly
+  overrides that.
+
+- points:
+
+  Logical; set to \`FALSE\` to skip the point layer.
+
+- main:
+
+  Plot title. Defaults to a one-line summary of the grid parameters,
+  which is what makes successive calls comparable.
+
+- legend:
+
+  Logical; draw the legend. Default \`TRUE\`.
+
+- ...:
+
+  Further arguments passed to the underlying \[plot()\] call for the
+  full-grid layer.
 
 ## Value
 
 Invisibly returns \`NULL\`. Called for its side effect (a base R plot).
+
+## See also
+
+\[make_ofe_grid()\], \[ofemt()\]
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+  g <- make_ofe_grid(ofe_f2, x = "Treatment", cellsize = 9, min_per_cell = 4)
+  plot_grid_selection(g, data = ofe_f2)
+  plot(g, data = ofe_f2)          # same thing
+
+  res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
+               keep_components = "full")
+  plot(res)                        # grid + selection + points, no extra args
+} # }
+```

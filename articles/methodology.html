@@ -152,12 +152,31 @@ one (this is the per-run <em>p</em>-value).</li>
 <h2 id="multiple-comparisons">5. Multiple comparisons<a class="anchor" aria-label="anchor" href="#multiple-comparisons"></a>
 </h2>
 <p>When the trial contains more than two treatments, every pairwise
-comparison is tested as above and the resulting median <em>p</em>-values
-are adjusted for multiplicity via <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust()</a></code>
-(Bonferroni, Holm or Benjamini–Hochberg, selected by the
-<code>p_adjust_method</code> argument). A compact letter display is then
-computed from the adjusted <em>p</em>-values with
-<code><a href="https://lselzer.github.io/multcompView/reference/multcompLetters.html" class="external-link">multcompView::multcompLetters()</a></code>.</p>
+comparison is tested as above and the results are adjusted for
+multiplicity via <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust()</a></code> (Bonferroni, Holm or
+Benjamini–Hochberg, selected by the <code>p_adjust_method</code>
+argument).</p>
+<p>The adjustment is applied <strong>within each run</strong>, across
+the \(\binom{k}{2}\) comparisons produced by that run, and the reported
+<code>p_adj</code> is the <em>median of the adjusted values</em>.
+Adjusting inside the run keeps the two summaries on the same footing:
+<code>p_value</code> and <code>p_adj</code> are both medians of a
+genuine empirical distribution over the <code>n_s</code> runs, and the
+median line drawn by <code><a href="../reference/plot_pvalue_hist.html">plot_pvalue_hist()</a></code> is exactly the
+value reported in the table. (Adjusting the median instead — the reverse
+order — would mix a summary statistic with a correction computed from a
+single vector of medians, and the histogram could then disagree with the
+table.) Both per-run quantities are kept in <code>res$perm_runs</code>
+as <code>p_value</code> and <code>p_adj</code>.</p>
+<p>A compact letter display is then computed from the adjusted
+<em>p</em>-values with <code><a href="https://lselzer.github.io/multcompView/reference/multcompLetters.html" class="external-link">multcompView::multcompLetters()</a></code>.
+Treatments are ordered by decreasing median response before the letters
+are assigned, so <code>"a"</code> marks the highest-yielding group and
+the letters read monotonically down the <code>Means comparison</code>
+table. Treatment labels are swapped for internal placeholders before the
+letters are computed and restored afterwards, so labels containing
+spaces, <code>+</code>, <code>-</code>, parentheses or accents are
+reported verbatim.</p>
 </div>
 <div class="section level2">
 <h2 id="assumptions-and-limitations">6. Assumptions and limitations<a class="anchor" aria-label="anchor" href="#assumptions-and-limitations"></a>

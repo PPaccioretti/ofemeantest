@@ -40,6 +40,40 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.900.9000" id="ofemeantest-009009000">ofemeantest 0.0.900.9000<a class="anchor" aria-label="anchor" href="#ofemeantest-009009000"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-0-900-9000">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-0-900-9000"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/ofemt.html">ofemt()</a></code> no longer accepts <code>nmin_cell</code> or <code>alpha_bonferroni</code>.</strong> Both were kept as deprecated aliases; they are now removed. Use <code>min_per_cell</code> instead of <code>nmin_cell</code>, and <code>p_adjust_method = "bonferroni"</code> instead of <code>alpha_bonferroni = TRUE</code>. Since the package has never been on CRAN, the disruption should be limited to a rename in existing scripts. Note that dropping the two arguments also shifts the <em>positional</em> order of the remaining ones, so calls that relied on argument position (rather than name) need to be revisited.</li>
+<li>
+<strong><code>p_adj</code> is now the median of the per-run adjusted p-values.</strong> Previously the median p-value was computed first and adjusted afterwards. Now <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust()</a></code> is applied within each sampling run, across that run’s pairwise comparisons, and the reported <code>p_adj</code> is the median of the resulting distribution. This keeps <code>p_value</code> and <code>p_adj</code> on the same footing — both medians over the <code>n_s</code> runs — and makes the median line in <code><a href="../reference/plot_pvalue_hist.html">plot_pvalue_hist()</a></code> agree with the table. Numeric results change when <code>p_adjust_method != "none"</code>.</li>
+<li>
+<code>keep_components = "light"</code> now stores the complete <code>ofe_grid</code> object (full grid, selection, per-cell stats and parameters) rather than only the selected cells, so the result can be plotted directly.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-0-900-9000">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-0-900-9000"></a></h3>
+<ul><li>Treatment labels are no longer rewritten internally. Spaces used to be replaced by dots (<code>"Bortrac + Zintrac"</code> became <code>"Bortrac.+.Zintrac"</code>), which leaked into <code>Means comparison</code>, <code>Cells per treatment</code> and the <code>Comparison</code> column, and could produce <code>NA</code> letters when a label collided with the separator used by <code><a href="https://lselzer.github.io/multcompView/reference/multcompLetters.html" class="external-link">multcompView::multcompLetters()</a></code>. Labels are now mapped to internal placeholders for the whole computation and restored on output, so any label — spaces, <code>+</code>, <code>-</code>, parentheses, accents — is reported verbatim. The same rewriting is gone from <code><a href="../reference/select_grid.html">select_grid()</a></code>, where it could collapse two genuinely different treatments into one and make a mixed cell look single-treatment.</li>
+<li>The compact letter display now follows the ordering of the means: treatments are sorted by decreasing median response before the letters are assigned, so <code>"a"</code> always marks the highest-yielding group.</li>
+<li>The upper bound passed to <code><a href="https://r-spatial.github.io/spdep/reference/dnearneigh.html" class="external-link">spdep::dnearneigh()</a></code> is exclusive, so the one cell whose nearest-neighbour distance <em>defined</em> <code>dmax</code> was being dropped from its own neighbour graph. The bound is now nudged to include it. This silently degraded <code>Rho</code>, Moran’s I and the ESS on every analysis; on the bundled <code>ofe_f2</code> example the corrected values are ESS 97 / Rho 0.652 / Moran’s I 0.548 (previously 99 / 0.646 / 0.529).</li>
+<li>
+<code><a href="../reference/ofemt.html">ofemt()</a></code> no longer flips <code>spdep</code>’s global <code>ZeroPolicyOption</code> as a side effect when an empty neighbour set is encountered; the policy is passed explicitly to the calls that need it.</li>
+<li>Response and treatment column names are quoted before being used in a formula, so columns whose names contain spaces or other special characters (<code>"Rinde kg/ha (seco)"</code>) no longer fail. Point coordinates are stored under dot-prefixed names, so user columns literally named <code>X</code> or <code>Y</code> are no longer shadowed.</li>
+<li>Sampling a treatment that contributes a single cell no longer falls into <code><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample()</a></code>’s length-one trap (<code>sample(5, 1)</code> sampling from <code>1:5</code>).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="reporting-and-plotting-0-0-900-9000">Reporting and plotting<a class="anchor" aria-label="anchor" href="#reporting-and-plotting-0-0-900-9000"></a></h3>
+<ul><li>
+<code>spdep</code>’s <em>“neighbour object has N sub-graphs”</em> warnings are muffled. They are expected for OFE trial shapes and carry no consequence for the diagnostics. What is now reported instead is the condition that actually matters: an error when no cell has any neighbour (the distance threshold is too small for the selection), and a warning naming how many cells were left isolated.</li>
+<li>
+<code><a href="../reference/plot_grid_selection.html">plot_grid_selection()</a></code> accepts an <code>ofemt_result</code> directly, and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> methods are provided for both <code>ofe_grid</code> and <code>ofemt_result</code>. On a result produced with <code>keep_components = "full"</code> a bare <code>plot(res)</code> draws the full grid, the selected cells and the observations, with no further arguments — the view needed to judge the effect of <code>cellsize</code>, <code>shift</code>, <code>angle_deg</code> and <code>buffer</code>. Selected cells are shaded translucently so the points underneath stay visible, and the plot title repeats the grid parameters so successive calls can be compared.</li>
+<li>
+<code><a href="../reference/plot_pvalue_hist.html">plot_pvalue_hist()</a></code> now draws a solid line at the median of the distribution in addition to the dashed line at <code>alpha</code>, and defaults to the adjusted p-values whenever the analysis used a <code>p_adjust_method</code> (override with <code>which = "raw"</code> or <code>which = "adjusted"</code>).</li>
+<li>
+<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> reports the total number of grid cells alongside the number selected, states which adjustment produced <code>p_adj</code>, and notes that the means table is sorted by decreasing mean.</li>
+<li>
+<code><a href="../reference/ofemt.html">?ofemt</a></code> now documents every component of the returned object — including <code>perm_runs</code>, the per-run empirical p-value distribution the method is built on — and spells out what each <code>keep_components</code> level stores and costs.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-changes-0-0-900-9000">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-0-900-9000"></a></h3>
 <ul><li>
 <code><a href="../reference/ofemt.html">ofemt()</a></code> exposes a <code>seed</code> argument that controls reproducibility of the permutation sampling. Default is <code>seed = 7L</code>; pass <code>NULL</code> to let results vary across runs.</li>
 <li>
@@ -59,12 +93,10 @@
 <li>Moran’s I is now extracted by name (<code>$estimate["Moran I statistic"]</code>) instead of by position, with a dependency-contract test guarding against future renames in <code>spdep</code>.</li>
 <li>Test suite added (<code>testthat</code> 3rd edition) covering grid construction, end-to-end <code><a href="../reference/ofemt.html">ofemt()</a></code> on <code>ofe_f2</code>, reproducibility from <code>seed</code>, error paths, and contracts with upstream dependencies.</li>
 <li>Continuous integration on GitHub Actions: <code>R CMD check</code> on Ubuntu/macOS/Windows times R release+devel+oldrel; pkgdown site deployed on push to <code>main</code>.</li>
-<li>
-<code>nmin_cell</code> is deprecated; use <code>min_per_cell</code> instead.</li>
-<li>
-<code>alpha_bonferroni</code> is deprecated; use <code>p_adjust_method = "bonferroni"</code> instead.</li>
 </ul></div>
-  </main></div>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

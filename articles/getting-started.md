@@ -68,18 +68,18 @@ res <- ofemt(
 res
 #> 
 #> === OFE permutation analysis ===
-#> Cellsize: 9_9 | Selected cells: 554
+#> Cellsize: 9 x 9 | Total cells: 1840 | Selected cells: 554
 #> Obs/cell (min/median/max): 4 / 5 / 7
 #> n: 554 | ESS: 97 | Rho: 0.652 | Moran's I: 0.548
 #> 
-#> --- Means comparison ---
+#> --- Means comparison (sorted by decreasing mean) ---
 #>   Treatment Yield_tn_mean letters
-#>  Fertilized      5.280402       b
-#>     Control      4.760095      a 
+#>  Fertilized      5.280402      a 
+#>     Control      4.760095       b
 #> 
-#> --- Pairwise tests (median p-value across runs, corrected p-value) ---
+#> --- Pairwise tests (median p across runs) ---
 #>              Comparison p_value  p_adj
-#>  Control vs. Fertilized  0.0035 0.0035
+#>  Fertilized vs. Control  0.0055 0.0055
 ```
 
 Key fields in the printed result:
@@ -114,7 +114,7 @@ names(g)
 #> [1] "grid_all"   "grid_sel"   "params"     "cell_stats"
 
 
-plot_grid_selection(g)
+plot_grid_selection(g, data = ofe_f2)
 ```
 
 ![](getting-started_files/figure-html/stepwise-1.png)
@@ -135,6 +135,77 @@ res2 <- ofemt(
 Both calls produce the same numeric output when the grid is built with
 matching arguments — `ofemt(grid = NULL, ...)` is equivalent to
 `ofemt(grid = make_ofe_grid(...))` under the hood.
+
+### Tuning the grid
+
+[`plot_grid_selection()`](https://ppaccioretti.github.io/ofemeantest/reference/plot_grid_selection.md)
+draws the three layers on one set of axes: the full grid in grey, the
+cells that survived the filters shaded in blue, and the observations as
+points. Overlaying the points on the cell boundaries is what makes the
+geometric arguments legible — a cell is dropped either because it
+straddles two treatments or because too few points landed inside it, and
+both are visible at a glance.
+
+The title of each plot repeats the parameters used, so successive calls
+can be compared directly:
+
+``` r
+
+op <- par(mfrow = c(1, 2))
+plot_grid_selection(
+  make_ofe_grid(ofe_f2, x = "Treatment", cellsize = 9, min_per_cell = 4),
+  data = ofe_f2
+)
+# Shift the origin by half a cell and rotate to follow the strips
+plot_grid_selection(
+  make_ofe_grid(
+    ofe_f2,
+    x = "Treatment",
+    cellsize = 9,
+    min_per_cell = 4,
+    shift = c(4.5, 4.5),
+    angle_deg = 10,
+    buffer = 5
+  ),
+  data = ofe_f2
+)
+par(op)
+```
+
+### Keeping the geometries in the result
+
+By default
+[`ofemt()`](https://ppaccioretti.github.io/ofemeantest/reference/ofemt.md)
+returns tables only. Set `keep_components` to embed the spatial objects
+in the result, which lets you plot the analysis that actually ran rather
+than rebuilding the grid by hand:
+
+| `keep_components` | Adds to the result | [`plot()`](https://rdrr.io/r/graphics/plot.default.html) shows |
+|----|----|----|
+| `"none"` (default) | nothing | *(errors — no geometries)* |
+| `"light"` | `grid`, the full `ofe_grid` (`grid_all`, `grid_sel`, `cell_stats`, `params`) | grid + selected cells |
+| `"full"` | `"light"` plus `cell_medians` (one point per selected cell, with its median response and ANOVA residual) and `points_joined` (every observation with its `CellID`) | grid + selected cells + points |
+
+Cost scales accordingly: `"light"` stores one polygon per grid cell,
+`"full"` adds one row per observation.
+
+``` r
+
+res_full <- ofemt(
+  ofe_f2,
+  y = "Yield_tn",
+  x = "Treatment",
+  cellsize = 9,
+  min_per_cell = 4,
+  keep_components = "full"
+)
+
+# No further arguments needed — every layer comes from the object itself
+plot(res_full)
+
+# The per-cell medians and residuals that fed the spatial diagnostics
+head(res_full$cell_medians)
+```
 
 ### Reproducibility
 
@@ -173,12 +244,40 @@ sensitivity to the random draws).
 
 Each call retains the per-run *p*-values in `res$perm_runs` so you can
 sanity-check that the median *p*-value is not an artefact of a long
-tail:
+tail. `perm_runs` has one row per comparison per sampling run, with
+columns `Comparison`, `p_value` (that run’s permutation *p*-value),
+`p_adj` (the same value after adjusting for multiplicity *within* the
+run) and `run`.
+
+[`plot_pvalue_hist()`](https://ppaccioretti.github.io/ofemeantest/reference/plot_pvalue_hist.md)
+draws that distribution with two reference lines per panel: a solid line
+at the median — the value reported in the `ANOVA permutation test` table
+— and a dashed line at `alpha`.
 
 ``` r
 
 # Requires the optional 'ggplot2' package.
 plot_pvalue_hist(res)
+```
+
+When the analysis was run with a multiplicity adjustment, the histogram
+shows the *adjusted* values by default, so the median line and the
+reported `p_adj` always refer to the same quantity. Use `which = "raw"`
+to see the unadjusted distribution instead:
+
+``` r
+
+res_bonf <- ofemt(
+  ofe_f2,
+  y = "Yield_tn",
+  x = "Treatment",
+  cellsize = 9,
+  min_per_cell = 4,
+  p_adjust_method = "bonferroni"
+)
+
+plot_pvalue_hist(res_bonf)                 # adjusted
+plot_pvalue_hist(res_bonf, which = "raw")  # unadjusted
 ```
 
 ## Where to go next

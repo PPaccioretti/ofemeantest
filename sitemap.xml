@@ -12,9 +12,11 @@
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/all_cells_grid.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/filter_per_treatment.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/get_perm_results.html</loc></url>
+<url><loc>https://ppaccioretti.github.io/ofemeantest/reference/grid_params_label.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/index.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/make_ofe_grid.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/n_eff.html</loc></url>
+<url><loc>https://ppaccioretti.github.io/ofemeantest/reference/nb_no_links.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/ofe_f2.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/ofe_p.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/ofemeantest-package.html</loc></url>
@@ -22,6 +24,9 @@
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/plot_grid_selection.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/plot_pvalue_hist.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/print.ofemt_result.html</loc></url>
+<url><loc>https://ppaccioretti.github.io/ofemeantest/reference/quote_name.html</loc></url>
+<url><loc>https://ppaccioretti.github.io/ofemeantest/reference/sample_values.html</loc></url>
 <url><loc>https://ppaccioretti.github.io/ofemeantest/reference/select_grid.html</loc></url>
+<url><loc>https://ppaccioretti.github.io/ofemeantest/reference/without_subgraph_warnings.html</loc></url>
 </urlset>
 
