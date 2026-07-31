@@ -4,27 +4,38 @@
 \alias{plot_pvalue_hist}
 \title{Plot histogram(s) of permutation p-values per comparison}
 \usage{
-plot_pvalue_hist(results)
+plot_pvalue_hist(results, which = c("auto", "adjusted", "raw"), bins = 30)
 }
 \arguments{
 \item{results}{An object of class `ofemt_result`, typically obtained from
-[ofemt()]. Must contain `perm_runs` (data frame with `Comparison` and
-`p_value`) and `params$alpha`.}
+[ofemt()]. Must contain `perm_runs` and `params$alpha`.}
+
+\item{which}{Which p-values to plot. `"auto"` (the default) uses the
+multiplicity-adjusted values whenever the analysis was run with
+`p_adjust_method != "none"`, and the raw values otherwise. `"adjusted"`
+and `"raw"` force one or the other. The adjustment is applied within each
+run before the histogram is built, so the median line coincides with the
+`p_adj` reported in the `ANOVA permutation test` table.}
+
+\item{bins}{Number of histogram bins. Default 30.}
 }
 \value{
 A `ggplot` object if **ggplot2** is installed; otherwise the
   function falls back to base R `hist()` and returns `NULL` invisibly.
 }
 \description{
-Produces one or several histograms showing the distribution of
-permutation-derived *p*-values for each comparison contained in an
-[`ofemt_result`] object. A dashed red vertical line marks the significance
-threshold (`alpha`) used in the analysis.
+Produces one histogram per pairwise comparison showing the empirical
+distribution of permutation *p*-values across the `n_s` sampling runs of an
+[`ofemt_result`]. Two reference lines are drawn on each panel: a solid line
+at the **median** of the distribution — the value [ofemt()] reports for that
+comparison — and a dashed line at the significance threshold **alpha**.
 }
 \examples{
 \dontrun{
-  res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9)
-  plot_pvalue_hist(res)
+  res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
+               p_adjust_method = "bonferroni")
+  plot_pvalue_hist(res)              # adjusted p-values
+  plot_pvalue_hist(res, which = "raw")
 }
 
 }

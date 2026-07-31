@@ -10,7 +10,6 @@ ofemt(
   x,
   cellsize = 10,
   min_per_cell = 4,
-  nmin_cell = NULL,
   n_p = 1000,
   n_s = 200,
   alpha = 0.05,
@@ -21,8 +20,7 @@ ofemt(
   grid = NULL,
   angle_deg = 0,
   buffer = 0,
-  seed = 7L,
-  alpha_bonferroni = NULL
+  seed = 7L
 )
 }
 \arguments{
@@ -34,21 +32,37 @@ ofemt(
 
 \item{cellsize, shift, angle_deg, buffer, min_per_cell}{grid settings (used when `grid` is NULL).}
 
-\item{nmin_cell, alpha_bonferroni}{**Deprecated.**
-Use `min_per_cell` instead of `nmin_cell`, and `p_adjust_method = "bonferroni"`
-instead of `alpha_bonferroni`.}
-
 \item{n_p}{number of permutations per ANOVA run.}
 
 \item{n_s}{number of sampling runs.}
 
 \item{alpha}{significance threshold for letters.}
 
-\item{p_adjust_method}{p-value adjustment method across pairwise comparisons.}
+\item{p_adjust_method}{p-value adjustment method across pairwise comparisons.
+The adjustment is applied *within each sampling run*, across the
+`choose(k, 2)` comparisons of that run; the reported `p_adj` is the median
+of those per-run adjusted values (see Details).}
 
 \item{crs}{optional target projected CRS if `data` is in lon/lat.}
 
-\item{keep_components}{`"none"`, `"light"`, or `"full"` to embed geometries in output.}
+\item{keep_components}{What spatial components to embed in the result. One of:
+\describe{
+  \item{`"none"` (default)}{Nothing spatial is stored. Smallest object, but
+    [plot_grid_selection()] and [plot.ofemt_result()] cannot be used on it.}
+  \item{`"light"`}{Adds `grid`: the complete `ofe_grid` object used for the
+    analysis (`grid_all`, `grid_sel`, `cell_stats`, `params`). Enough to
+    redraw the full grid and the selected cells, but the observations
+    themselves are *not* stored, so no points can be overlaid.}
+  \item{`"full"`}{Everything in `"light"`, plus `cell_medians` (one point
+    per selected cell carrying the per-cell median response, its treatment
+    and the ANOVA residual used for the spatial diagnostics) and
+    `points_joined` (every observation that fell inside a selected cell,
+    with its `CellID`). This is the option that lets `plot()` overlay the
+    raw points on the grid, which is the useful view when tuning
+    `shift`, `angle_deg`, `buffer` or `cellsize`.}
+}
+Roughly, `"light"` costs one polygon per grid cell and `"full"` adds one
+row per observation.}
 
 \item{grid}{optional: an `ofe_grid` (e.g., from [make_ofe_grid()]). If `NULL`,
 the grid is generated internally using `cellsize`, `min_per_cell`,
@@ -59,9 +73,32 @@ the grid is generated internally using `cellsize`, `min_per_cell`,
 `seed = NULL` to let results vary across runs.}
 }
 \value{
-An object of class `ofemt_result`.
-
-a list of length 4 with mean test comparisson results
+An object of class `ofemt_result`: a list with
+  \describe{
+    \item{`General information`}{One-row data frame with the cell size, the
+      number of cells in the full grid and in the selection, the
+      min/median/max number of observations per selected cell, the number of
+      cells entering the analysis (`n`), the effective sample size (`ESS`),
+      the spatial autocorrelation estimate (`Rho`) and Moran's *I*.}
+    \item{`Cells per treatment`}{`table` of selected cells per treatment.}
+    \item{`ANOVA permutation test`}{One row per pairwise comparison, with the
+      median p-value across runs (`p_value`) and its multiplicity-adjusted
+      counterpart (`p_adj`).}
+    \item{`Means comparison`}{One row per treatment, sorted by decreasing
+      median response, with the compact letter display.}
+    \item{`perm_runs`}{The raw per-run output: `n_s * choose(k, 2)` rows with
+      columns `Trt_1`, `Trt_2`, `Comparison`, `p_value` (the permutation
+      p-value of that comparison in that run), `p_adj` (the same value after
+      adjusting within the run) and `run` (run index, `1:n_s`). This is the
+      empirical p-value distribution the method is built on; it is what
+      [plot_pvalue_hist()] draws and what you would use to inspect the
+      run-to-run variability behind the reported medians.}
+    \item{`params`}{The settings actually used (grid geometry, `n_p`, `n_s`,
+      `alpha`, `p_adjust_method`, `seed`, and `grid_source`, which records
+      whether the grid was supplied or built internally).}
+    \item{`grid`, `cell_medians`, `points_joined`}{Optional spatial
+      components; see `keep_components`.}
+  }
 }
 \description{
 Runs a cell-based OFE analysis with permutation ANOVA and spatial diagnostics.
@@ -80,16 +117,42 @@ The test can be easily extended to cover scenarios with more than two
 treatments by employing pairwise comparisons of OFE across multiple
 treatments, with p-values can be adjusted for multiplicity
 using Bonferroni correction
+
+## Multiplicity adjustment
+When `p_adjust_method != "none"`, each sampling run is adjusted on its own —
+[stats::p.adjust()] is applied to the `choose(k, 2)` p-values produced by that
+run — and the reported `p_adj` is the median of the resulting empirical
+distribution of adjusted p-values. The `p_adj` column of `perm_runs` holds the
+per-run values, so [plot_pvalue_hist()] shows exactly the distribution whose
+median is reported.
+
+## Compact letter display
+Treatments are ordered by decreasing median response before the letters are
+computed, so `"a"` always marks the highest-yielding group and the letters
+read monotonically down the `Means comparison` table. Treatment labels are
+mapped to internal placeholders before being handed to
+[multcompView::multcompLetters()] and mapped back afterwards, so labels
+containing spaces, `+`, `-` or any other special character are reported
+verbatim.
 }
 \examples{
 \dontrun{
   my_data <- ofe_f2
   res <- ofemt(my_data, y = "Yield", x = "Treatment",
                cellsize = 10, min_per_cell = 4, alpha = 0.05)
+
+  # Keep the geometries to inspect how the grid lands on the points
+  res <- ofemt(my_data, y = "Yield", x = "Treatment",
+               cellsize = 10, min_per_cell = 4,
+               keep_components = "full")
+  plot(res)
 }
 }
 \references{
 A new method to compare
 treatments in unreplicated on-farm experimentation. Córdoba M.,
 Paccioretti P., Balzarini M. Under review.
+}
+\seealso{
+[make_ofe_grid()], [plot_grid_selection()], [plot_pvalue_hist()]
 }
