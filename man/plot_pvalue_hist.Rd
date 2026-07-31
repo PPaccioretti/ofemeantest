@@ -4,7 +4,12 @@
 \alias{plot_pvalue_hist}
 \title{Plot histogram(s) of permutation p-values per comparison}
 \usage{
-plot_pvalue_hist(results, which = c("auto", "adjusted", "raw"), bins = 30)
+plot_pvalue_hist(
+  results,
+  which = c("auto", "adjusted", "raw"),
+  bins = 30,
+  engine = c("ggplot2", "base")
+)
 }
 \arguments{
 \item{results}{An object of class `ofemt_result`, typically obtained from
@@ -18,10 +23,14 @@ run before the histogram is built, so the median line coincides with the
 `p_adj` reported in the `ANOVA permutation test` table.}
 
 \item{bins}{Number of histogram bins. Default 30.}
+
+\item{engine}{Which graphics system to draw with, `"ggplot2"` (the default)
+or `"base"`. If **ggplot2** is not installed the function falls back to
+`"base"` with a message.}
 }
 \value{
-A `ggplot` object if **ggplot2** is installed; otherwise the
-  function falls back to base R `hist()` and returns `NULL` invisibly.
+With `engine = "ggplot2"`, a `ggplot` object. With
+  `engine = "base"`, invisibly `NULL`.
 }
 \description{
 Produces one histogram per pairwise comparison showing the empirical
@@ -36,6 +45,7 @@ comparison — and a dashed line at the significance threshold **alpha**.
                p_adjust_method = "bonferroni")
   plot_pvalue_hist(res)              # adjusted p-values
   plot_pvalue_hist(res, which = "raw")
+  plot_pvalue_hist(res, engine = "base")
 }
 
 }

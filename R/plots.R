@@ -23,12 +23,26 @@
 #' @param main Plot title. Defaults to a one-line summary of the grid
 #'   parameters, which is what makes successive calls comparable.
 #' @param legend Logical; draw the legend. Default `TRUE`.
-#' @param legend_pos Where to place the legend, passed to [graphics::legend()]
-#'   (e.g. `"topleft"`, `"bottomright"`, or `"top"`). Default `"topleft"`.
+#' @param legend_pos Where to place the legend. Defaults to the engine's own
+#'   sensible choice: `"right"` (outside the panel) for `"ggplot2"`, and
+#'   `"topleft"` for `"base"`. Base-style keywords are translated for the
+#'   ggplot2 engine, so `"bottomright"` works with either; `"none"` hides it.
+#' @param point_size Size of the observation dots. Defaults to `0.15` for the
+#'   ggplot2 engine and `0.35` (as `cex`) for the base engine. Yield-monitor
+#'   data runs to tens of thousands of points, where the default can still read
+#'   as a solid mass — lower it to see the cell boundaries underneath.
+#' @param engine Which graphics system to draw with. `"ggplot2"` (the default)
+#'   places the legend outside the plotting panel, so it can never sit on top
+#'   of the data and the result does not depend on the device size. `"base"`
+#'   uses base graphics and draws the legend inside the panel. If **ggplot2**
+#'   is not installed the function falls back to `"base"` with a message.
 #' @param ... Further arguments passed to the underlying [plot()] call for the
-#'   full-grid layer.
+#'   full-grid layer. Base engine only; ignored by the ggplot2 engine.
 #'
-#' @return Invisibly returns `NULL`. Called for its side effect (a base R plot).
+#' @return With `engine = "ggplot2"`, a `ggplot` object (printed when
+#'   auto-printed at the console, and further customisable with `+`). With
+#'   `engine = "base"`, invisibly `NULL` — the function is called for the plot
+#'   it draws.
 #'
 #' @examples
 #' \dontrun{
@@ -39,6 +53,10 @@
 #'   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
 #'                keep_components = "full")
 #'   plot(res)                        # grid + selection + points, no extra args
+#'
+#'   # Base graphics instead, or a ggplot you keep customising
+#'   plot(res, engine = "base")
+#'   plot(res) + ggplot2::labs(subtitle = "Lote 2")
 #' }
 #'
 #' @seealso [make_ofe_grid()], [ofemt()]
@@ -51,9 +69,12 @@ plot_grid_selection <- function(
   points = TRUE,
   main = NULL,
   legend = TRUE,
-  legend_pos = "topleft",
+  legend_pos = NULL,
+  point_size = NULL,
+  engine = c("ggplot2", "base"),
   ...
 ) {
+  engine <- match.arg(engine)
   if (inherits(x, "ofemt_result")) {
     grid_obj <- x[["grid"]]
     if (is.null(grid_obj)) {
@@ -108,53 +129,126 @@ plot_grid_selection <- function(
     )
   }
 
+  has_sel <- !is.null(grid_sel) && nrow(grid_sel) > 0
+  has_pts <- !is.null(data)
+  if (has_pts) {
+    stopifnot(inherits(data, "sf"))
+  }
+
+  if (engine == "ggplot2" && !requireNamespace("ggplot2", quietly = TRUE)) {
+    message(
+      "`engine = \"ggplot2\"` needs the ggplot2 package; drawing with base ",
+      "graphics instead. Install it with `install.packages(\"ggplot2\")`."
+    )
+    engine <- "base"
+  }
+
+  if (engine == "ggplot2") {
+    grid_plot_ggplot(
+      grid_all = grid_all,
+      grid_sel = if (has_sel) grid_sel else NULL,
+      data = data,
+      main = main,
+      legend = legend,
+      legend_pos = legend_pos,
+      point_size = point_size
+    )
+  } else {
+    grid_plot_base(
+      grid_all = grid_all,
+      grid_sel = if (has_sel) grid_sel else NULL,
+      data = data,
+      main = main,
+      legend = legend,
+      legend_pos = legend_pos,
+      point_size = point_size,
+      ...
+    )
+  }
+}
+
+# Shared palette, so both engines draw the same thing. `ofe_fill_unsel` is a
+# very light grey rather than white so that unselected cells read as cells
+# rather than as page background, and so the legend key for them is visible.
+ofe_fill_unsel <- "grey96"
+ofe_fill_sel <- "#1f78b4"
+ofe_border_unsel <- "grey80"
+ofe_border_sel <- "grey20"
+ofe_lab_unsel <- "Unselected cells"
+ofe_lab_sel <- "Selected cells"
+ofe_lab_pts <- "Observations"
+
+#' Draw the grid selection with base graphics
+#'
+#' @inheritParams plot_grid_selection
+#' @param grid_all,grid_sel `sf` polygons; `grid_sel` may be `NULL`.
+#' @return Invisibly `NULL`.
+#' @keywords internal
+grid_plot_base <- function(
+  grid_all,
+  grid_sel,
+  data,
+  main,
+  legend,
+  legend_pos,
+  point_size = NULL,
+  ...
+) {
+  if (is.null(legend_pos)) {
+    legend_pos <- "topleft"
+  }
+  if (is.null(point_size)) {
+    point_size <- 0.35
+  }
   plot(
     sf::st_geometry(grid_all),
-    border = "grey85",
+    border = ofe_border_unsel,
+    col = ofe_fill_unsel,
     lwd = 0.7,
     main = main,
     cex.main = 0.85,
     font.main = 1,
     ...
   )
-  has_sel <- !is.null(grid_sel) && nrow(grid_sel) > 0
-  if (has_sel) {
+  if (!is.null(grid_sel)) {
     plot(
       sf::st_geometry(grid_sel),
       add = TRUE,
-      border = "black",
-      col = adjustcolor("#1f78b4", alpha.f = 0.20),
+      border = ofe_border_sel,
+      col = adjustcolor(ofe_fill_sel, alpha.f = 0.25),
       lwd = 1.2
     )
   }
-  has_pts <- !is.null(data)
-  if (has_pts) {
-    stopifnot(inherits(data, "sf"))
+  if (!is.null(data)) {
     plot(
       sf::st_geometry(data),
       add = TRUE,
       pch = 16,
-      cex = 0.35,
+      cex = point_size,
       col = adjustcolor("black", alpha.f = 0.55)
     )
   }
 
-  if (isTRUE(legend)) {
+  if (isTRUE(legend) && !identical(legend_pos, "none")) {
     # Filled squares mirror what is actually drawn, so the mapping needs no
     # explanation. The box is opaque: with `bty = "n"` the labels landed on
     # top of the grid and became unreadable.
-    keep <- c(TRUE, has_sel, has_pts)
+    keep <- c(TRUE, !is.null(grid_sel), !is.null(data))
     graphics::legend(
       legend_pos,
-      legend = c("Unselected cells", "Selected cells", "Observations")[keep],
+      legend = c(ofe_lab_unsel, ofe_lab_sel, ofe_lab_pts)[keep],
       pch = c(22, 22, 16)[keep],
       pt.bg = c(
-        "white",
-        adjustcolor("#1f78b4", alpha.f = 0.20),
+        ofe_fill_unsel,
+        adjustcolor(ofe_fill_sel, alpha.f = 0.25),
         NA
       )[keep],
       pt.cex = c(1.6, 1.6, 0.9)[keep],
-      col = c("grey85", "black", adjustcolor("black", alpha.f = 0.55))[keep],
+      col = c(
+        ofe_border_unsel,
+        ofe_border_sel,
+        adjustcolor("black", alpha.f = 0.55)
+      )[keep],
       bty = "o",
       bg = "white",
       box.col = "grey70",
@@ -164,6 +258,149 @@ plot_grid_selection <- function(
     )
   }
   invisible(NULL)
+}
+
+#' Draw the grid selection with ggplot2
+#'
+#' @inheritParams grid_plot_base
+#' @return A `ggplot` object.
+#' @keywords internal
+grid_plot_ggplot <- function(
+  grid_all,
+  grid_sel,
+  data,
+  main,
+  legend,
+  legend_pos,
+  point_size = NULL
+) {
+  .data <- NULL
+  if (is.null(point_size)) {
+    point_size <- 0.15
+  }
+  # Wrap a long parameter line: on a narrow device an unwrapped title runs out
+  # of the panel and collides with the legend, which is exactly the kind of
+  # device-size dependence this engine is meant to avoid.
+  if (!is.null(main) && any(nchar(main) > 45)) {
+    main <- paste(strwrap(main, width = 45), collapse = "\n")
+  }
+
+  fill_vals <- stats::setNames(
+    c(ofe_fill_unsel, adjustcolor(ofe_fill_sel, alpha.f = 0.35)),
+    c(ofe_lab_unsel, ofe_lab_sel)
+  )
+  fill_breaks <- c(
+    ofe_lab_unsel,
+    if (!is.null(grid_sel)) ofe_lab_sel
+  )
+
+  # Carry the legend label as an explicit column rather than relying on `aes()`
+  # resolving a namespace variable through its data mask. The cells map `fill`
+  # and the points map `shape`: keeping them on separate scales is what stops
+  # each legend key from being drawn by every layer (which produced keys with
+  # a square and a dot stacked on top of each other).
+  grid_all[[".ofe_layer"]] <- ofe_lab_unsel
+  p <- ggplot2::ggplot() +
+    ggplot2::geom_sf(
+      data = grid_all,
+      ggplot2::aes(fill = .data$.ofe_layer),
+      colour = ofe_border_unsel,
+      linewidth = 0.15,
+      key_glyph = "rect"
+    )
+
+  if (!is.null(grid_sel)) {
+    grid_sel[[".ofe_layer"]] <- ofe_lab_sel
+    p <- p +
+      ggplot2::geom_sf(
+        data = grid_sel,
+        ggplot2::aes(fill = .data$.ofe_layer),
+        colour = ofe_border_sel,
+        linewidth = 0.3,
+        key_glyph = "rect"
+      )
+  }
+  if (!is.null(data)) {
+    data[[".ofe_layer"]] <- ofe_lab_pts
+    p <- p +
+      ggplot2::geom_sf(
+        data = data,
+        ggplot2::aes(shape = .data$.ofe_layer),
+        colour = "black",
+        size = point_size,
+        alpha = 0.5
+      )
+  }
+
+  p <- p +
+    ggplot2::scale_fill_manual(
+      values = fill_vals,
+      breaks = fill_breaks,
+      limits = fill_breaks,
+      name = NULL
+    ) +
+    ggplot2::labs(title = main) +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(
+      legend.position = legend_pos_gg(legend_pos, legend),
+      plot.title = ggplot2::element_text(size = ggplot2::rel(0.9)),
+      axis.title = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_line(colour = "grey93")
+    ) +
+    ggplot2::guides(fill = ggplot2::guide_legend(order = 1))
+
+  # Only declare the shape scale when a layer actually maps it, otherwise
+  # ggplot2 warns about a manual scale with no matching levels.
+  if (!is.null(data)) {
+    p <- p +
+      ggplot2::scale_shape_manual(
+        values = stats::setNames(16, ofe_lab_pts),
+        name = NULL
+      ) +
+      ggplot2::guides(
+        shape = ggplot2::guide_legend(
+          order = 2,
+          override.aes = list(size = 2, alpha = 1)
+        )
+      )
+  }
+
+  p
+}
+
+#' Translate a legend position to ggplot2's vocabulary
+#'
+#' Lets the same `legend_pos` value work with either engine: base's corner
+#' keywords collapse to the nearest ggplot2 side, and anything ggplot2 already
+#' understands (including a numeric `c(x, y)`) passes through untouched.
+#'
+#' @param pos `legend_pos` as supplied by the user; `NULL` for the default.
+#' @param legend Logical; `FALSE` forces `"none"`.
+#' @return A value suitable for `ggplot2::theme(legend.position = )`.
+#' @keywords internal
+legend_pos_gg <- function(pos, legend = TRUE) {
+  if (!isTRUE(legend)) {
+    return("none")
+  }
+  if (is.null(pos)) {
+    return("right")
+  }
+  if (is.numeric(pos)) {
+    return(pos)
+  }
+  switch(
+    pos,
+    topleft = ,
+    left = ,
+    bottomleft = "left",
+    topright = ,
+    right = ,
+    bottomright = "right",
+    top = "top",
+    bottom = "bottom",
+    none = "none",
+    pos
+  )
 }
 
 #' @rdname plot_grid_selection
@@ -219,9 +456,12 @@ grid_params_label <- function(params) {
 #'   run before the histogram is built, so the median line coincides with the
 #'   `p_adj` reported in the `ANOVA permutation test` table.
 #' @param bins Number of histogram bins. Default 30.
+#' @param engine Which graphics system to draw with, `"ggplot2"` (the default)
+#'   or `"base"`. If **ggplot2** is not installed the function falls back to
+#'   `"base"` with a message.
 #'
-#' @return A `ggplot` object if **ggplot2** is installed; otherwise the
-#'   function falls back to base R `hist()` and returns `NULL` invisibly.
+#' @return With `engine = "ggplot2"`, a `ggplot` object. With
+#'   `engine = "base"`, invisibly `NULL`.
 #'
 #' @examples
 #' \dontrun{
@@ -229,14 +469,17 @@ grid_params_label <- function(params) {
 #'                p_adjust_method = "bonferroni")
 #'   plot_pvalue_hist(res)              # adjusted p-values
 #'   plot_pvalue_hist(res, which = "raw")
+#'   plot_pvalue_hist(res, engine = "base")
 #' }
 #'
 #' @export
 plot_pvalue_hist <- function(
   results,
   which = c("auto", "adjusted", "raw"),
-  bins = 30
+  bins = 30,
+  engine = c("ggplot2", "base")
 ) {
+  engine <- match.arg(engine)
   # Declared here to silence R CMD check's "no visible binding for global
   # variable '.data'" note without adding rlang as an Imports dependency.
   # ggplot2 still resolves `.data$col` correctly at evaluation time via its
@@ -289,7 +532,15 @@ plot_pvalue_hist <- function(
   median_lab <- "median p"
   alpha_lab <- paste0("\u03b1 = ", alpha)
 
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  if (engine == "ggplot2" && !requireNamespace("ggplot2", quietly = TRUE)) {
+    message(
+      "`engine = \"ggplot2\"` needs the ggplot2 package; drawing with base ",
+      "graphics instead. Install it with `install.packages(\"ggplot2\")`."
+    )
+    engine <- "base"
+  }
+
+  if (engine == "base") {
     # Base R fallback: one panel per comparison
     comps <- unique(perm_runs$Comparison)
     op <- graphics::par(mfrow = c(1, length(comps)))
