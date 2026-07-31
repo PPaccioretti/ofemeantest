@@ -7,9 +7,35 @@ test_that("plot_grid_selection() runs without error on an ofe_grid", {
   pdf(file = NULL)
   on.exit(dev.off(), add = TRUE)
 
-  expect_silent(plot_grid_selection(g))
   expect_silent(plot_grid_selection(g, data = pts))
   expect_silent(plot(g, data = pts))
+  expect_silent(plot_grid_selection(g, points = FALSE))
+  # Built without return_points and given no data: say so instead of
+  # silently drawing a grid with no observations on it.
+  expect_message(plot_grid_selection(g), "no observations to draw")
+})
+
+test_that("an ofe_grid built with return_points = TRUE draws its points", {
+  skip_if_no_spatial_deps()
+  pts <- make_toy_ofe()
+
+  g_pts <- make_ofe_grid(
+    pts,
+    x = "Treatment",
+    cellsize = 20,
+    min_per_cell = 1,
+    return_points = TRUE
+  )
+  expect_false(is.null(g_pts$points_sel))
+
+  pdf(file = NULL)
+  on.exit(dev.off(), add = TRUE)
+
+  # points_sel is picked up automatically -> no "no observations" message
+  expect_silent(plot_grid_selection(g_pts))
+  expect_silent(plot(g_pts))
+  # ... and points = FALSE still suppresses the layer without complaining
+  expect_silent(plot_grid_selection(g_pts, points = FALSE))
 })
 
 test_that("plot_grid_selection() works straight off an ofemt_result", {
@@ -36,8 +62,9 @@ test_that("plot_grid_selection() works straight off an ofemt_result", {
   # "full" carries grid + points: no extra arguments needed.
   expect_silent(plot_grid_selection(run("full")))
   expect_silent(plot(run("full")))
-  # "light" carries the grid only.
-  expect_silent(plot_grid_selection(run("light")))
+  # "light" carries the grid only, and says so when points are requested.
+  expect_message(plot_grid_selection(run("light")), "no observations to draw")
+  expect_silent(plot_grid_selection(run("light"), points = FALSE))
   # "none" cannot be plotted, and says so.
   expect_error(plot_grid_selection(run("none")), "keep_components")
 })
