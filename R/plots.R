@@ -12,13 +12,19 @@
 #'   `"full"`. With an `ofemt_result` every layer is taken from the object
 #'   itself, so no extra arguments are needed; the points are only available
 #'   under `keep_components = "full"`.
-#' @param data Optional `sf` points to overlay. Only needed for an `ofe_grid`,
-#'   which does not carry the observations; for an `ofemt_result` it defaults
-#'   to the stored `points_joined` and passing it explicitly overrides that.
-#' @param points Logical; set to `FALSE` to skip the point layer.
+#' @param data Optional `sf` points to overlay. Rarely needed: the observations
+#'   are taken from the object itself — `points_sel` for an `ofe_grid` built
+#'   with `make_ofe_grid(return_points = TRUE)`, `points_joined` for an
+#'   `ofemt_result` run with `keep_components = "full"`. Pass `data` when the
+#'   object carries no points, or to override the stored ones.
+#' @param points Logical; set to `FALSE` to skip the point layer. When `TRUE`
+#'   (the default) and no observations are available, a message explains how to
+#'   obtain them rather than silently drawing a grid without points.
 #' @param main Plot title. Defaults to a one-line summary of the grid
 #'   parameters, which is what makes successive calls comparable.
 #' @param legend Logical; draw the legend. Default `TRUE`.
+#' @param legend_pos Where to place the legend, passed to [graphics::legend()]
+#'   (e.g. `"topleft"`, `"bottomright"`, or `"top"`). Default `"topleft"`.
 #' @param ... Further arguments passed to the underlying [plot()] call for the
 #'   full-grid layer.
 #'
@@ -45,6 +51,7 @@ plot_grid_selection <- function(
   points = TRUE,
   main = NULL,
   legend = TRUE,
+  legend_pos = "topleft",
   ...
 ) {
   if (inherits(x, "ofemt_result")) {
@@ -59,11 +66,25 @@ plot_grid_selection <- function(
     if (is.null(data) && isTRUE(points)) {
       data <- x[["points_joined"]]
     }
+    no_points_hint <- paste0(
+      "re-run `ofemt()` with `keep_components = \"full\"`, ",
+      "or pass the observations via `data =`"
+    )
     if (is.null(main)) {
       main <- grid_params_label(x[["params"]])
     }
   } else if (inherits(x, "ofe_grid")) {
     grid_obj <- x
+    # `make_ofe_grid(return_points = TRUE)` stores the observations that fell
+    # in the selected cells as `points_sel`; use them so the argument actually
+    # has a visible effect here.
+    if (is.null(data) && isTRUE(points)) {
+      data <- x[["points_sel"]]
+    }
+    no_points_hint <- paste0(
+      "rebuild the grid with `make_ofe_grid(..., return_points = TRUE)`, ",
+      "or pass the observations via `data =`"
+    )
     if (is.null(main)) {
       main <- grid_params_label(x[["params"]])
     }
@@ -77,6 +98,14 @@ plot_grid_selection <- function(
 
   if (!isTRUE(points)) {
     data <- NULL
+  } else if (is.null(data)) {
+    # Points were asked for (the default) but the object carries none. Say so
+    # instead of silently drawing a grid with no observations on it.
+    message(
+      "`plot_grid_selection()`: no observations to draw; ",
+      no_points_hint,
+      "."
+    )
   }
 
   plot(
@@ -111,16 +140,27 @@ plot_grid_selection <- function(
   }
 
   if (isTRUE(legend)) {
+    # Filled squares mirror what is actually drawn, so the mapping needs no
+    # explanation. The box is opaque: with `bty = "n"` the labels landed on
+    # top of the grid and became unreadable.
     keep <- c(TRUE, has_sel, has_pts)
     graphics::legend(
-      "topleft",
-      legend = c("Full grid", "Selected cells", "Observations")[keep],
-      lty = c(1, 1, NA)[keep],
-      pch = c(NA, 22, 16)[keep],
-      pt.bg = c(NA, adjustcolor("#1f78b4", alpha.f = 0.20), NA)[keep],
-      col = c("grey60", "black", "black")[keep],
-      bty = "n",
-      cex = 0.8
+      legend_pos,
+      legend = c("Unselected cells", "Selected cells", "Observations")[keep],
+      pch = c(22, 22, 16)[keep],
+      pt.bg = c(
+        "white",
+        adjustcolor("#1f78b4", alpha.f = 0.20),
+        NA
+      )[keep],
+      pt.cex = c(1.6, 1.6, 0.9)[keep],
+      col = c("grey85", "black", adjustcolor("black", alpha.f = 0.55))[keep],
+      bty = "o",
+      bg = "white",
+      box.col = "grey70",
+      box.lwd = 0.8,
+      cex = 0.8,
+      inset = 0.01
     )
   }
   invisible(NULL)

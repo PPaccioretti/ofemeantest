@@ -12,6 +12,7 @@ plot_grid_selection(
   points = TRUE,
   main = NULL,
   legend = TRUE,
+  legend_pos = "topleft",
   ...
 )
 
@@ -26,16 +27,23 @@ plot_grid_selection(
 itself, so no extra arguments are needed; the points are only available
 under `keep_components = "full"`.}
 
-\item{data}{Optional `sf` points to overlay. Only needed for an `ofe_grid`,
-which does not carry the observations; for an `ofemt_result` it defaults
-to the stored `points_joined` and passing it explicitly overrides that.}
+\item{data}{Optional `sf` points to overlay. Rarely needed: the observations
+are taken from the object itself — `points_sel` for an `ofe_grid` built
+with `make_ofe_grid(return_points = TRUE)`, `points_joined` for an
+`ofemt_result` run with `keep_components = "full"`. Pass `data` when the
+object carries no points, or to override the stored ones.}
 
-\item{points}{Logical; set to `FALSE` to skip the point layer.}
+\item{points}{Logical; set to `FALSE` to skip the point layer. When `TRUE`
+(the default) and no observations are available, a message explains how to
+obtain them rather than silently drawing a grid without points.}
 
 \item{main}{Plot title. Defaults to a one-line summary of the grid
 parameters, which is what makes successive calls comparable.}
 
 \item{legend}{Logical; draw the legend. Default `TRUE`.}
+
+\item{legend_pos}{Where to place the legend, passed to [graphics::legend()]
+(e.g. `"topleft"`, `"bottomright"`, or `"top"`). Default `"topleft"`.}
 
 \item{...}{Further arguments passed to the underlying [plot()] call for the
 full-grid layer.}
