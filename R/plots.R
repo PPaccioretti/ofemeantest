@@ -154,7 +154,7 @@ plot_grid_selection <- function(
         NA
       )[keep],
       pt.cex = c(1.6, 1.6, 0.9)[keep],
-      col = c("grey60", "black", adjustcolor("black", alpha.f = 0.55))[keep],
+      col = c("grey85", "black", adjustcolor("black", alpha.f = 0.55))[keep],
       bty = "o",
       bg = "white",
       box.col = "grey70",
