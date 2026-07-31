@@ -157,11 +157,11 @@ ofemt <- function(
 
   # --- grid handling
 
-  if (!is.null(grid) & !inherits(grid, "ofe_grid")) {
+  if (!is.null(grid) && !inherits(grid, "ofe_grid")) {
     stop("`grid` must be ofe_grid.")
   }
 
-  if (!is.null(grid) & inherits(grid, "ofe_grid")) {
+  if (!is.null(grid) && inherits(grid, "ofe_grid")) {
     stopifnot(inherits(grid$grid_sel, "sf"))
     grid_source <- "provided_ofe_grid_sel"
     used_params <- grid$params
