@@ -82,7 +82,7 @@ adjusted for multiplicity via
 (Bonferroni, Holm or Benjamini–Hochberg, selected by the
 `p_adjust_method` argument). A compact letter display is then computed
 from the adjusted *p*-values with
-[`multcompView::multcompLetters()`](https://rdrr.io/pkg/multcompView/man/multcompLetters.html).
+[`multcompView::multcompLetters()`](https://lselzer.github.io/multcompView/reference/multcompLetters.html).
 
 ## 6. Assumptions and limitations
 
