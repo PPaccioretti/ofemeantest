@@ -253,7 +253,7 @@ ofemt <- function(
       stop("`grid` must be polygons.")
     }
     if (sf::st_crs(grid) != sf::st_crs(data)) {
-      warning("`grid` CRS was trasformed to `data` CRS.", call. = FALSE)
+      warning("`grid` CRS was transformed to `data` CRS.", call. = FALSE)
       grid <- sf::st_transform(grid, sf::st_crs(data))
       grid_obj$grid_sel <- grid
       if (!is.null(grid_obj$grid_all)) {
