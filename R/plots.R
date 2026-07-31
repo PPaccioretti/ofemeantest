@@ -112,7 +112,7 @@ plot_grid_selection <- function(
 
   if (isTRUE(legend)) {
     keep <- c(TRUE, has_sel, has_pts)
-    legend(
+    graphics::legend(
       "topleft",
       legend = c("Full grid", "Selected cells", "Observations")[keep],
       lty = c(1, 1, NA)[keep],
