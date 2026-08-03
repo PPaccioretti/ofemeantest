@@ -11,16 +11,20 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/PPaccioretti/ofemeantest/blob/main/DESCRIPTION)
+[`inst/CITATION`](https://github.com/PPaccioretti/ofemeantest/blob/main/inst/CITATION)
 
-Córdoba M, Paccioretti P, Balzarini M (2026). *ofemeantest: On Farm
-Experimentation Mean Test*. R package version 0.0.900-1,
-<https://ppaccioretti.github.io/ofemeantest/>.
+Córdoba, M., Paccioretti, P., & Balzarini, M. (2025). A new method to
+compare treatments in unreplicated on-farm experimentation. Precision
+Agriculture, 26(1), 4. https://doi.org/10.1007/s11119-024-10206-0
 
-    @Manual{,
-      title = {ofemeantest: On Farm Experimentation Mean Test},
-      author = {Mariano Córdoba and Pablo Paccioretti and Monica Balzarini},
-      year = {2026},
-      note = {R package version 0.0.900-1},
-      url = {https://ppaccioretti.github.io/ofemeantest/},
+    @Article{,
+      title = {A new method to compare treatments in unreplicated on-farm experimentation},
+      author = {Mariano Córdoba and Pablo Paccioretti and Mónica Balzarini},
+      journal = {Precision Agriculture},
+      year = {2025},
+      volume = {26},
+      number = {1},
+      pages = {4},
+      doi = {10.1007/s11119-024-10206-0},
+      url = {https://doi.org/10.1007/s11119-024-10206-0},
     }
