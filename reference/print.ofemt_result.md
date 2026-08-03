@@ -51,8 +51,8 @@ printed output.
 ## Examples
 
 ``` r
-  res <- ofemt(my_data, y = "Yield", x = "Treatment")
-#> Error: object 'my_data' not found
+if (FALSE) { # \dontrun{
+  res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment")
   print(res)
-#> Error: object 'res' not found
+} # }
 ```
