@@ -386,6 +386,12 @@ legend_pos_gg <- function(pos, legend = TRUE) {
     return("right")
   }
   if (is.numeric(pos)) {
+    if (length(pos) != 2L) {
+      stop(
+        "`legend_pos` numeric values must be length 2, e.g. c(0.1, 0.9).",
+        call. = FALSE
+      )
+    }
     return(pos)
   }
   switch(
