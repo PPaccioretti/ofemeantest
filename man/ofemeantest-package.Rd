@@ -6,7 +6,7 @@
 \alias{ofemeantest-package}
 \title{ofemeantest: On Farm Experimentation Mean Test}
 \description{
-Provides tools for comparing treatments in unreplicated on-farm experiments using georeferenced data. The package includes functions for constructing spatial grids, estimating the effective sample size from spatial autocorrelation, performing repeated permutation tests, adjusting pairwise comparisons, and visualizing the results. It implements the OFE-mean test described in Córdoba, Paccioretti and Balzarini (2025) \doi{10.1007/s11119-024-10206-0}.
+Provides tools for comparing treatments in unreplicated on-farm experiments (OFE) using georeferenced data. The package includes functions for constructing spatial grids, estimating the effective sample size from spatial autocorrelation, performing repeated permutation tests, adjusting pairwise comparisons, and visualizing the results. It implements the OFE-mean test described in Córdoba, Paccioretti and Balzarini (2025) \doi{10.1007/s11119-024-10206-0}.
 }
 \seealso{
 Useful links:
@@ -18,12 +18,12 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Mariano Córdoba \email{marianoacba@agro.unc.edu.ar}
+\strong{Maintainer}: Pablo Paccioretti \email{pablopaccioretti@agro.unc.edu.ar} [copyright holder]
 
 Authors:
 \itemize{
-  \item Mariano Córdoba \email{marianoacba@agro.unc.edu.ar}
-  \item Pablo Paccioretti \email{pablopaccioretti@agro.unc.edu.ar}
+  \item Pablo Paccioretti \email{pablopaccioretti@agro.unc.edu.ar} [copyright holder]
+  \item Mariano Córdoba \email{marianoacba@agro.unc.edu.ar} [copyright holder]
   \item Monica Balzarini \email{mbalzari@agro.unc.edu.ar}
 }
 

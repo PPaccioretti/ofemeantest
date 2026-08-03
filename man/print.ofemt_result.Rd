@@ -39,9 +39,7 @@ If any of these components are missing, they are simply skipped in the
 printed output.
 }
 \examples{
-\dontrun{
   res <- ofemt(my_data, y = "Yield", x = "Treatment")
   print(res)
-}
 
 }
