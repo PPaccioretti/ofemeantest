@@ -45,6 +45,7 @@
 #'   function is called for the plot it draws.
 #'
 #' @examples
+#' \dontrun{
 #'   g <- make_ofe_grid(ofe_f2, x = "Treatment", cellsize = 9, min_per_cell = 4)
 #'   plot_grid_selection(g, data = ofe_f2)
 #'   plot(g, data = ofe_f2)          # same thing
@@ -56,7 +57,7 @@
 #'   # Base graphics instead, or a ggplot you keep customising
 #'   plot(res, engine = "base")
 #'   plot(res) + ggplot2::labs(subtitle = "Lote 2")
-#'
+#' }
 #' @seealso [make_ofe_grid()], [ofemt()]
 #' @importFrom graphics legend
 #' @importFrom grDevices adjustcolor
@@ -472,12 +473,13 @@ grid_params_label <- function(params) {
 #'   `engine = "base"`, invisibly `NULL`.
 #'
 #' @examples
+#' \dontrun{
 #'   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
 #'                p_adjust_method = "bonferroni")
 #'   plot_pvalue_hist(res)              # adjusted p-values
 #'   plot_pvalue_hist(res, which = "raw")
 #'   plot_pvalue_hist(res, engine = "base")
-#'
+#' }
 #' @export
 plot_pvalue_hist <- function(
   results,

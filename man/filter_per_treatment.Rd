@@ -40,9 +40,4 @@ The function:
 
 Points outside the grid are dropped (`left = FALSE` in the join).
 }
-\examples{
-  filtered_grid <- filter_per_treatment(data = pts_sf, grid = my_ofe_grid, x = "Treatment")
-  plot(filtered_grid$grid_sel["CellID"])
-
-}
 \keyword{internal}

@@ -127,15 +127,16 @@
 #' @seealso [make_ofe_grid()], [plot_grid_selection()], [plot_pvalue_hist()]
 #'
 #' @examples
-#'   my_data <- ofe_f2
-#'   res <- ofemt(my_data, y = "Yield_tn", x = "Treatment",
+#' \dontrun{
+#'   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
 #'                cellsize = 10, min_per_cell = 4, alpha = 0.05)
 #'
 #'   # Keep the geometries to inspect how the grid lands on the points
-#'   res <- ofemt(my_data, y = "Yield_tn", x = "Treatment",
+#'   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
 #'                cellsize = 10, min_per_cell = 4,
 #'                keep_components = "full")
 #'   plot(res)
+#' }
 ofemt <- function(
   data,
   y,

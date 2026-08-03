@@ -29,10 +29,6 @@
 #' @return An updated `ofe_grid` object whose `grid_sel` component contains
 #'   only polygons corresponding to single-treatment cells.
 #'
-#' @examples
-#'   filtered_grid <- filter_per_treatment(data = pts_sf, grid = my_ofe_grid, x = "Treatment")
-#'   plot(filtered_grid$grid_sel["CellID"])
-#'
 #' @keywords internal
 filter_per_treatment <- function(data, grid, x) {
   stopifnot(inherits(grid, "ofe_grid"))
