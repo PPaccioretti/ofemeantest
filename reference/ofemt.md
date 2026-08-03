@@ -1,7 +1,9 @@
 # OFE permutation analysis
 
-Runs a cell-based OFE analysis with permutation ANOVA and spatial
-diagnostics.
+Approach to statistically analyze unreplicated OFE to promote
+field-specific inference of treatment effects. Statistical tools for
+spatial data are coupled with permutation tests to determine the
+statistical significance between treatment means.
 
 ## Usage
 
