@@ -11,8 +11,13 @@ Authors@R:
       person("Monica", "Balzarini", email = "mbalzari@agro.unc.edu.ar", 
              role = c("aut"))
     )
-Description: Permutation-based statistical method to support field-specific 
-    inferences from spatial data within the context of unreplicated OFE.
+Description: Provides tools for comparing treatments in unreplicated on-farm
+    experiments using georeferenced data. The package includes functions for
+    constructing spatial grids, estimating the effective sample size from
+    spatial autocorrelation, performing repeated permutation tests, adjusting
+    pairwise comparisons, and visualizing the results. It implements the
+    OFE-mean test described in Córdoba, Paccioretti and Balzarini (2025)
+    <doi:10.1007/s11119-024-10206-0>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -24,7 +29,7 @@ Imports:
     spdep,
     withr
 Suggests:
-    ggplot2 (>= 3.4.0),
+    ggplot2,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)

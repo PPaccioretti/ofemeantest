@@ -24,7 +24,8 @@ ofemt(
 )
 }
 \arguments{
-\item{data}{sf points; must contain columns `y` and `x`.}
+\item{data}{An `sf` object containing point geometries and the response
+and treatment columns specified in `y` and `x`.}
 
 \item{y}{response column (numeric).}
 
@@ -101,42 +102,56 @@ An object of class `ofemt_result`: a list with
   }
 }
 \description{
-Approach to statistically analyze unreplicated OFE to promote field-specific
-inference of treatment effects.
-Statistical tools for spatial data are coupled with permutation tests to
-determine the statistical significance between treatment means.
+Analyzes unreplicated on-farm experiments to support field-specific
+inference about treatment effects. Spatial statistical methods are
+combined with permutation tests to compare the means of two or more
+treatments.
 }
 \details{
-The methodology involves:
+The OFE-mean test accounts for spatial dependence when comparing
+treatments in unreplicated on-farm experiments. The procedure involves:
+
 \enumerate{
-  \item calculation of effective sample size (ESS) given the underlying spatial
-structure.
-  \item ANOVA permutation test on a random sample of ESS.
-  \item generation of the empirical distribution of p-values from repetition of
-step two. The median of this empirical distribution is regarded as the
-p-value associated with the non-treatment effect hypothesis.
+  \item Aggregating the georeferenced observations within grid cells.
+  \item Estimating the spatial autocorrelation of the treatment-adjusted
+        residuals.
+  \item Calculating the effective sample size (ESS) from the estimated
+        spatial dependence.
+  \item Drawing repeated balanced subsamples whose size is determined by
+        the ESS.
+  \item Performing pairwise permutation analysis of variance tests for
+        each subsample.
+  \item Generating an empirical distribution of p-values for each
+        treatment comparison.
 }
-The test can be easily extended to cover scenarios with more than two
-treatments by employing pairwise comparisons of OFE across multiple
-treatments, with p-values can be adjusted for multiplicity
-using Bonferroni correction
 
-## Multiplicity adjustment
-When `p_adjust_method != "none"`, each sampling run is adjusted on its own —
-[stats::p.adjust()] is applied to the `choose(k, 2)` p-values produced by that
-run — and the reported `p_adj` is the median of the resulting empirical
-distribution of adjusted p-values. The `p_adj` column of `perm_runs` holds the
-per-run values, so [plot_pvalue_hist()] shows exactly the distribution whose
-median is reported.
+The median of each empirical p-value distribution is reported as the
+p-value associated with the null hypothesis of no treatment effect.
 
-## Compact letter display
-Treatments are ordered by decreasing median response before the letters are
-computed, so `"a"` always marks the highest-yielding group and the letters
-read monotonically down the `Means comparison` table. Treatment labels are
-mapped to internal placeholders before being handed to
-[multcompView::multcompLetters()] and mapped back afterwards, so labels
-containing spaces, `+`, `-` or any other special character are reported
-verbatim.
+For experiments with more than two treatments, all pairwise treatment
+comparisons are performed.
+
+\strong{Multiplicity adjustment}
+
+When `p_adjust_method != "none"`, multiplicity adjustment is performed
+separately within each sampling run. [stats::p.adjust()] is applied to the
+`choose(k, 2)` pairwise p-values obtained in that run, where `k` is the
+number of treatments. The reported adjusted p-value is the median of the
+resulting empirical distribution of adjusted p-values.
+
+The `p_adj` column in `perm_runs` contains the adjusted p-value from each
+sampling run. Therefore, [plot_pvalue_hist()] displays the empirical
+distribution used to calculate the reported median.
+
+\strong{Compact letter display}
+
+Treatments are ordered by decreasing response before the compact letter
+display is generated. Treatments that do not share a letter are considered
+significantly different at the significance level specified by `alpha`.
+Treatment labels are internally recoded before calling
+[multcompView::multcompLetters()] and subsequently restored. Consequently,
+labels containing spaces or special characters are preserved in the
+results.
 }
 \examples{
 \dontrun{
@@ -152,10 +167,10 @@ verbatim.
 }
 }
 \references{
-Córdoba, M., Paccioretti, P., & Balzarini, M. (2025).
-A new method to compare treatments in unreplicated on-farm
-experimentation. Precision Agriculture,
-26(1), 4. https://doi.org/10.1007/s11119-024-10206-0
+Córdoba, M., Paccioretti, P. and Balzarini, M. (2025).
+A new method to compare treatments in unreplicated on-farm experimentation.
+\emph{Precision Agriculture}, 26, Article 4.
+\doi{10.1007/s11119-024-10206-0}
 }
 \seealso{
 [make_ofe_grid()], [plot_grid_selection()], [plot_pvalue_hist()]
