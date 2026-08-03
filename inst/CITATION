@@ -1,0 +1,28 @@
+citHeader(
+  "To cite the ofemeantest package in publications, please cite the associated methodological paper:"
+)
+
+bibentry(
+  bibtype = "Article",
+  title = "A new method to compare treatments in unreplicated on-farm experimentation",
+  author = personList(
+    person("Mariano", "Córdoba"),
+    person("Pablo", "Paccioretti"),
+    person("Mónica", "Balzarini")
+  ),
+  journal = "Precision Agriculture",
+  year = "2025",
+  volume = "26",
+  number = "1",
+  pages = "4",
+  doi = "10.1007/s11119-024-10206-0",
+  url = "https://doi.org/10.1007/s11119-024-10206-0",
+  textVersion =
+    paste(
+      "Córdoba, M., Paccioretti, P., & Balzarini, M. (2025).",
+      "A new method to compare treatments in unreplicated",
+      "on-farm experimentation.",
+      "Precision Agriculture, 26(1), 4.",
+      "https://doi.org/10.1007/s11119-024-10206-0"
+    )
+)

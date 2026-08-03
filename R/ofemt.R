@@ -1,6 +1,9 @@
 #' OFE permutation analysis
 #'
-#' Runs a cell-based OFE analysis with permutation ANOVA and spatial diagnostics.
+#' Approach to statistically analyze unreplicated OFE to promote field-specific
+#' inference of treatment effects.
+#' Statistical tools for spatial data are coupled with permutation tests to
+#' determine the statistical significance between treatment means.
 #'
 #' @param data sf points; must contain columns `y` and `x`.
 #' @param y response column (numeric).
@@ -100,9 +103,10 @@
 #'       components; see `keep_components`.}
 #'   }
 #'
-#' @references A new method to compare
-#' treatments in unreplicated on-farm experimentation. Córdoba M.,
-#' Paccioretti P., Balzarini M. Under review.
+#' @references Córdoba, M., Paccioretti, P., & Balzarini, M. (2025).
+#' A new method to compare treatments in unreplicated on-farm
+#' experimentation. Precision Agriculture,
+#' 26(1), 4. https://doi.org/10.1007/s11119-024-10206-0
 #'
 #' @seealso [make_ofe_grid()], [plot_grid_selection()], [plot_pvalue_hist()]
 #'
@@ -396,7 +400,8 @@ ofemt <- function(
   )
   names(trt_med_df) <- c(".trt", y)
   trt_med_df <- trt_med_df[
-    order(trt_med_df[[y]], decreasing = TRUE), ,
+    order(trt_med_df[[y]], decreasing = TRUE),
+    ,
     drop = FALSE
   ]
 

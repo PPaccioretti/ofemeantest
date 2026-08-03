@@ -149,9 +149,10 @@ verbatim.
 }
 }
 \references{
-A new method to compare
-treatments in unreplicated on-farm experimentation. Córdoba M.,
-Paccioretti P., Balzarini M. Under review.
+Córdoba, M., Paccioretti, P., & Balzarini, M. (2025).
+A new method to compare treatments in unreplicated on-farm
+experimentation. Precision Agriculture,
+26(1), 4. https://doi.org/10.1007/s11119-024-10206-0
 }
 \seealso{
 [make_ofe_grid()], [plot_grid_selection()], [plot_pvalue_hist()]

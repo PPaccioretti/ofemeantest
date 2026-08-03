@@ -93,9 +93,9 @@ that of the control was 4.76 $t\ ha^{-1}$.
 
 ## References
 
-Córdoba M., Paccioretti P., Balzarini M. 2024. A new method to compare
-treatments in unreplicated on-farm experimentation. Precis. Agric.
-(under review).
+Córdoba, M., Paccioretti, P., & Balzarini, M. (2025). A new method to compare
+treatments in unreplicated on-farm experimentation. Precision Agriculture,
+26(1), 4. https://doi.org/10.1007/s11119-024-10206-0
 
 Vega A., Córdoba M., Balzarini M. 2019. Protocol for automating error
 removal from yield maps. Precis. Agric. 20: 1030–1044.
