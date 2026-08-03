@@ -111,6 +111,22 @@ See [all_cells_grid()].</p></dd>
     <div class="dont-index"><p>[all_cells_grid()], [select_grid()]</p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span> <span class="va">grid_ofe</span> <span class="op">&lt;-</span> <span class="fu">make_ofe_grid</span><span class="op">(</span></span></span>
+<span class="r-in"><span>   <span class="va">ofe_f2</span>,</span></span>
+<span class="r-in"><span>   x <span class="op">=</span> <span class="st">"Treatment"</span>,</span></span>
+<span class="r-in"><span>   cellsize <span class="op">=</span> <span class="fl">9</span>,</span></span>
+<span class="r-in"><span>   min_per_cell <span class="op">=</span> <span class="fl">1L</span>,</span></span>
+<span class="r-in"><span>   angle_deg <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>   buffer <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>   shift <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>   return_points <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span> <span class="op">)</span></span></span>
+<span class="r-in"><span> <span class="fu"><a href="plot_grid_selection.html">plot_grid_selection</a></span><span class="op">(</span><span class="va">grid_ofe</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="make_ofe_grid-1.png" alt="" width="700" height="433"></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

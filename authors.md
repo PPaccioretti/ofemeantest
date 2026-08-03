@@ -2,9 +2,9 @@
 
 ## Authors
 
-- **Mariano Córdoba**. Author, maintainer.
+- **Mariano Córdoba**. Author, copyright holder.
 
-- **Pablo Paccioretti**. Author.
+- **Pablo Paccioretti**. Author, maintainer, copyright holder.
 
 - **Monica Balzarini**. Author.
 

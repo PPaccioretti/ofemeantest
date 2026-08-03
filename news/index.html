@@ -39,9 +39,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.0.900.9000" id="ofemeantest-009009000">ofemeantest 0.0.900.9000<a class="anchor" aria-label="anchor" href="#ofemeantest-009009000"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.0.900" id="ofemeantest-00900">ofemeantest 0.0.900<a class="anchor" aria-label="anchor" href="#ofemeantest-00900"></a></h2>
 <div class="section level3">
-<h3 id="breaking-changes-0-0-900-9000">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-0-900-9000"></a></h3>
+<h3 id="breaking-changes-0-0-900">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-0-900"></a></h3>
 <ul><li>
 <strong><code><a href="../reference/ofemt.html">ofemt()</a></code> no longer accepts <code>nmin_cell</code> or <code>alpha_bonferroni</code>.</strong> Both were kept as deprecated aliases; they are now removed. Use <code>min_per_cell</code> instead of <code>nmin_cell</code>, and <code>p_adjust_method = "bonferroni"</code> instead of <code>alpha_bonferroni = TRUE</code>. Since the package has never been on CRAN, the disruption should be limited to a rename in existing scripts. Note that dropping the two arguments also shifts the <em>positional</em> order of the remaining ones, so calls that relied on argument position (rather than name) need to be revisited.</li>
 <li>
@@ -50,7 +50,7 @@
 <code>keep_components = "light"</code> now stores the complete <code>ofe_grid</code> object (full grid, selection, per-cell stats and parameters) rather than only the selected cells, so the result can be plotted directly.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-0-0-900-9000">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-0-900-9000"></a></h3>
+<h3 id="bug-fixes-0-0-900">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-0-900"></a></h3>
 <ul><li>Treatment labels are no longer rewritten internally. Spaces used to be replaced by dots (<code>"Bortrac + Zintrac"</code> became <code>"Bortrac.+.Zintrac"</code>), which leaked into <code>Means comparison</code>, <code>Cells per treatment</code> and the <code>Comparison</code> column, and could produce <code>NA</code> letters when a label collided with the separator used by <code><a href="https://lselzer.github.io/multcompView/reference/multcompLetters.html" class="external-link">multcompView::multcompLetters()</a></code>. Labels are now mapped to internal placeholders for the whole computation and restored on output, so any label — spaces, <code>+</code>, <code>-</code>, parentheses, accents — is reported verbatim. The same rewriting is gone from <code><a href="../reference/select_grid.html">select_grid()</a></code>, where it could collapse two genuinely different treatments into one and make a mixed cell look single-treatment.</li>
 <li>The compact letter display now follows the ordering of the means: treatments are sorted by decreasing median response before the letters are assigned, so <code>"a"</code> always marks the highest-yielding group.</li>
 <li>The upper bound passed to <code><a href="https://r-spatial.github.io/spdep/reference/dnearneigh.html" class="external-link">spdep::dnearneigh()</a></code> is exclusive, so the one cell whose nearest-neighbour distance <em>defined</em> <code>dmax</code> was being dropped from its own neighbour graph. The bound is now nudged to include it. This silently degraded <code>Rho</code>, Moran’s I and the ESS on every analysis; on the bundled <code>ofe_f2</code> example the corrected values are ESS 97 / Rho 0.652 / Moran’s I 0.548 (previously 99 / 0.646 / 0.529).</li>
@@ -60,7 +60,7 @@
 <li>Sampling a treatment that contributes a single cell no longer falls into <code><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample()</a></code>’s length-one trap (<code>sample(5, 1)</code> sampling from <code>1:5</code>).</li>
 </ul></div>
 <div class="section level3">
-<h3 id="reporting-and-plotting-0-0-900-9000">Reporting and plotting<a class="anchor" aria-label="anchor" href="#reporting-and-plotting-0-0-900-9000"></a></h3>
+<h3 id="reporting-and-plotting-0-0-900">Reporting and plotting<a class="anchor" aria-label="anchor" href="#reporting-and-plotting-0-0-900"></a></h3>
 <ul><li>
 <code>spdep</code>’s <em>“neighbour object has N sub-graphs”</em> warnings are muffled. They are expected for OFE trial shapes and carry no consequence for the diagnostics. What is now reported instead is the condition that actually matters: an error when no cell has any neighbour (the distance threshold is too small for the selection), and a warning naming how many cells were left isolated.</li>
 <li>
@@ -77,7 +77,7 @@
 <code><a href="../reference/ofemt.html">?ofemt</a></code> now documents every component of the returned object — including <code>perm_runs</code>, the per-run empirical p-value distribution the method is built on — and spells out what each <code>keep_components</code> level stores and costs.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="other-changes-0-0-900-9000">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-0-900-9000"></a></h3>
+<h3 id="other-changes-0-0-900">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-0-900"></a></h3>
 <ul><li>
 <code><a href="../reference/ofemt.html">ofemt()</a></code> exposes a <code>seed</code> argument that controls reproducibility of the permutation sampling. Default is <code>seed = 7L</code>; pass <code>NULL</code> to let results vary across runs.</li>
 <li>

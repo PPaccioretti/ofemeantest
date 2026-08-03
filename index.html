@@ -64,8 +64,11 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the development version of ofemeantest from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
+<p>You can install the package from CRAN:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"ofemeantest"</span><span class="op">)</span></span></code></pre></div>
+<p>Also, you can install the development version of ofemeantest from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pkg_install.html" class="external-link">pkg_install</a></span><span class="op">(</span><span class="st">"PPaccioretti/ofemeantest"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -73,36 +76,39 @@
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
 <p>The example dataset comprised a field trial of corn (Zea mays L.), where the impact of broadcast phosphorus fertilization was evaluated. The treatment strip received superphosphate at rates ranging from 250 to 500 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mi>g</mi><mspace width="0.222em"></mspace><mi>h</mi><msup><mi>a</mi><mrow><mi>–</mi><mn>1</mn></mrow></msup></mrow><annotation encoding="application/x-tex">kg\ ha^{–1}</annotation></semantics></math> [0-21-0], while the control strip received no P fertilizer (0 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mi>g</mi><mspace width="0.222em"></mspace><mi>h</mi><msup><mi>a</mi><mrow><mi>–</mi><mn>1</mn></mrow></msup></mrow><annotation encoding="application/x-tex">kg\ ha^{–1}</annotation></semantics></math>). Each strip was 2.2 ha in area, totaling 100 ha. Raw grain yield monitor data for each each single strip were cleaned following the protocol proposed by Vega et al. (2019).</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ppaccioretti.github.io/ofemeantest/">ofemeantest</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"ofe_f2"</span><span class="op">)</span></span></code></pre></div>
-<p>The <code>ofemt</code> function first creates a regular artificial grid over the area, including the strips to be analyzed. The grid spacing (<code>cellsize</code>) was set to 9 m. This grid overlaid the point data from the yield map, assigning each georeferenced data point to a corresponding grid cell. Each grid cell contained a minimum of four data points (<code>nmin_cell = 4</code>). Empty cells or cells with less than five data points are removed. The median of the yield data is calculated for each cell. A one-way ANOVA is fitted to the cell medians to compare treatments. From the residuals of the fitted model, the magnitude of spatial autocorrelation is estimated using the approximate profile likelihood estimator of spatial dependence (Rho) and the Moran index (MI). An effective sample size (ESS) is then calculated. Second, <code>ofemt</code> randomly samples grid cells without replacement using the ESS. The yield data from both strips (treatment and control) are used to perform a permutational ANOVA with 2000 iterations per test (<code>n_p</code>). This procedure provides a p-value for the comparison of treatment means. The permutational ANOVA is repeated on 200 random samples of grid cells (<code>n_s</code>) using the same sampling procedure. The significance level for comparing means (<code>alpha</code>), is left at their default value (0.05). The resulting permutation p-values are collected to generate an empirical p-value distribution. Finally, the median p-value is calculated to compare the means.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/ofemt.html">ofemt</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ofe_f2</span>,</span>
-<span>      y <span class="op">=</span> <span class="st">"Yield_tn"</span>,</span>
-<span>      x <span class="op">=</span> <span class="st">"Treatment"</span>,</span>
-<span>      cellsize <span class="op">=</span> <span class="fl">9</span>,</span>
-<span>      nmin_cell <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>      n_p <span class="op">=</span> <span class="fl">2000</span>,</span>
-<span>      n_s <span class="op">=</span> <span class="fl">200</span>,</span>
-<span>      alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
-<span>      shift <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>      alpha_bonferroni <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>      crs <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $`General information`</span></span>
-<span><span class="co">#&gt;   Cellsize Min.Obs.Cell Max.Obs.Cell Median.Obs.Cell   n ESS      Rho        MI</span></span>
-<span><span class="co">#&gt; 1        9            4            7               5 554  97 0.652285 0.5483085</span></span>
+<p>The <code>ofemt</code> function first creates a regular artificial grid over the area, including the strips to be analyzed. The grid spacing (<code>cellsize</code>) was set to 9 m. This grid overlaid the point data from the yield map, assigning each georeferenced data point to a corresponding grid cell. Each grid cell contained a minimum of four data points (<code>min_per_cell = 4</code>). Empty cells or cells with less than four data points are removed. The median of the yield data is calculated for each cell. A one-way ANOVA is fitted to the cell medians to compare treatments. From the residuals of the fitted model, the magnitude of spatial autocorrelation is estimated using the approximate profile likelihood estimator of spatial dependence (Rho) and the Moran index (MI). An effective sample size (ESS) is then calculated. Second, <code>ofemt</code> randomly samples grid cells without replacement using the ESS. The yield data from both strips (treatment and control) are used to perform a permutational ANOVA with 2000 iterations per test (<code>n_p</code>). This procedure provides a p-value for the comparison of treatment means. The permutational ANOVA is repeated on 200 random samples of grid cells (<code>n_s</code>) using the same sampling procedure. The significance level for comparing means (<code>alpha</code>), is left at their default value (0.05). The resulting permutation p-values are collected to generate an empirical p-value distribution. Finally, the median p-value is calculated to compare the means.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/ofemt.html">ofemt</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">ofe_f2</span>,</span>
+<span>  y <span class="op">=</span> <span class="st">"Yield_tn"</span>,</span>
+<span>  x <span class="op">=</span> <span class="st">"Treatment"</span>,</span>
+<span>  cellsize <span class="op">=</span> <span class="fl">9</span>,</span>
+<span>  min_per_cell <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  n_p <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>  n_s <span class="op">=</span> <span class="fl">200</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  shift <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  p_adjust_method <span class="op">=</span> <span class="st">"none"</span>,</span>
+<span>  crs <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; `grid` not provided: building one internally via `make_ofe_grid()`. Pass a pre-built `ofe_grid` to inspect or reuse the selection.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`Cells per treatment`</span></span>
+<span><span class="co">#&gt; === OFE permutation analysis ===</span></span>
+<span><span class="co">#&gt; Cellsize: 9 x 9 | Total cells: 1840 | Selected cells: 554</span></span>
+<span><span class="co">#&gt; Obs/cell (min/median/max): 4 / 5 / 7</span></span>
+<span><span class="co">#&gt; n: 554 | ESS: 97 | Rho: 0.652 | Moran's I: 0.548</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;    Control Fertilized </span></span>
-<span><span class="co">#&gt;        273        281 </span></span>
+<span><span class="co">#&gt; --- Means comparison (sorted by decreasing mean) ---</span></span>
+<span><span class="co">#&gt;   Treatment Yield_tn_mean letters</span></span>
+<span><span class="co">#&gt;  Fertilized      5.280402      a </span></span>
+<span><span class="co">#&gt;     Control      4.760095       b</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; --- Pairwise tests (median p-value across runs, corrected p-value) ---</span></span>
-<span><span class="co">#&gt; # A tibble: 1 × 3</span></span>
-<span><span class="co">#&gt;   Comparison             p_value  p_adj</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;                    &lt;dbl&gt;  &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1 Control vs. Fertilized  0.0208 0.0208</span></span></code></pre></div>
+<span><span class="co">#&gt; --- Pairwise tests (median p across runs) ---</span></span>
+<span><span class="co">#&gt;              Comparison p_value  p_adj</span></span>
+<span><span class="co">#&gt;  Fertilized vs. Control  0.0055 0.0055</span></span></code></pre></div>
 <p>The results show that out of the total number of cells selected (554), the ESS was 97, with a magnitude of autocorrelation (Rho) of 0.65. The fertilization treatment showed significant differences compared to the control (p &lt; 0.05).</p>
 <p>The average yield of the fertilized strip was 5.28 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mspace width="0.222em"></mspace><mi>h</mi><msup><mi>a</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup></mrow><annotation encoding="application/x-tex">t\ ha^{-1}</annotation></semantics></math>, while that of the control was 4.76 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mspace width="0.222em"></mspace><mi>h</mi><msup><mi>a</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup></mrow><annotation encoding="application/x-tex">t\ ha^{-1}</annotation></semantics></math>.</p>
 </div>
@@ -147,8 +153,8 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Mariano Córdoba <br><small class="roles"> Author, maintainer </small>   </li>
-<li>Pablo Paccioretti <br><small class="roles"> Author </small>   </li>
+<li>Mariano Córdoba <br><small class="roles"> Author, copyright holder </small>   </li>
+<li>Pablo Paccioretti <br><small class="roles"> Author, maintainer, copyright holder </small>   </li>
 <li>Monica Balzarini <br><small class="roles"> Author </small>   </li>
 </ul>
 </div>
