@@ -55,8 +55,8 @@ Points outside the grid are dropped (\`left = FALSE\` in the join).
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
   filtered_grid <- filter_per_treatment(data = pts_sf, grid = my_ofe_grid, x = "Treatment")
+#> Error in filter_per_treatment(data = pts_sf, grid = my_ofe_grid, x = "Treatment"): could not find function "filter_per_treatment"
   plot(filtered_grid$grid_sel["CellID"])
-} # }
+#> Error: object 'filtered_grid' not found
 ```

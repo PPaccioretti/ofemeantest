@@ -53,11 +53,13 @@ With \`engine = "ggplot2"\`, a \`ggplot\` object. With \`engine =
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
                p_adjust_method = "bonferroni")
+#> `grid` not provided: building one internally via `make_ofe_grid()`. Pass a pre-built `ofe_grid` to inspect or reuse the selection.
   plot_pvalue_hist(res)              # adjusted p-values
+
   plot_pvalue_hist(res, which = "raw")
+
   plot_pvalue_hist(res, engine = "base")
-} # }
+
 ```

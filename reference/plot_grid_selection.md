@@ -108,17 +108,21 @@ returned object to render it. With \`engine = "base"\`, invisibly
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
   g <- make_ofe_grid(ofe_f2, x = "Treatment", cellsize = 9, min_per_cell = 4)
   plot_grid_selection(g, data = ofe_f2)
+
   plot(g, data = ofe_f2)          # same thing
+
 
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
                keep_components = "full")
+#> `grid` not provided: building one internally via `make_ofe_grid()`. Pass a pre-built `ofe_grid` to inspect or reuse the selection.
   plot(res)                        # grid + selection + points, no extra args
+
 
   # Base graphics instead, or a ggplot you keep customising
   plot(res, engine = "base")
+
   plot(res) + ggplot2::labs(subtitle = "Lote 2")
-} # }
+
 ```
