@@ -40,4 +40,3 @@ Config/testthat/edition: 3
 URL: https://ppaccioretti.github.io/ofemeantest/, https://github.com/PPaccioretti/ofemeantest
 BugReports: https://github.com/PPaccioretti/ofemeantest/issues
 Config/roxygen2/version: 8.0.0
-RoxygenNote: 7.3.3
