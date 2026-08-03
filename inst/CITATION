@@ -5,7 +5,7 @@ citHeader(
 bibentry(
   bibtype = "Article",
   title = "A new method to compare treatments in unreplicated on-farm experimentation",
-  author = personList(
+  author = c(
     person("Mariano", "Córdoba"),
     person("Pablo", "Paccioretti"),
     person("Mónica", "Balzarini")

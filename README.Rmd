@@ -20,7 +20,12 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-You can install the development version of ofemeantest from [GitHub](https://github.com/) with:
+You can install the package from CRAN:
+``` r
+install.packages("ofemeantest")
+```
+
+Also, you can install the development version of ofemeantest from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")

@@ -43,6 +43,19 @@ Convenience wrapper that builds a grid with [all_cells_grid()] and
 filters cells using [select_grid()]. It is the main entry point for
 generating grids for on-farm experiment (OFE) analysis.
 }
+\examples{
+ grid_ofe <- make_ofe_grid(
+   ofe_f2,
+   x = "Treatment",
+   cellsize = 9,
+   min_per_cell = 1L,
+   angle_deg = 0,
+   buffer = 0,
+   shift = c(0, 0),
+   return_points = TRUE
+ )
+ plot_grid_selection(grid_ofe)
+}
 \seealso{
 [all_cells_grid()], [select_grid()]
 }

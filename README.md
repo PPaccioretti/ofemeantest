@@ -9,7 +9,13 @@
 
 ## Installation
 
-You can install the development version of ofemeantest from
+You can install the package from CRAN:
+
+``` r
+install.packages("ofemeantest")
+```
+
+Also, you can install the development version of ofemeantest from
 [GitHub](https://github.com/) with:
 
 ``` r
@@ -37,15 +43,15 @@ area, including the strips to be analyzed. The grid spacing (`cellsize`)
 was set to 9 m. This grid overlaid the point data from the yield map,
 assigning each georeferenced data point to a corresponding grid cell.
 Each grid cell contained a minimum of four data points
-(`nmin_cell = 4`). Empty cells or cells with less than five data points
-are removed. The median of the yield data is calculated for each cell. A
-one-way ANOVA is fitted to the cell medians to compare treatments. From
-the residuals of the fitted model, the magnitude of spatial
-autocorrelation is estimated using the approximate profile likelihood
-estimator of spatial dependence (Rho) and the Moran index (MI). An
-effective sample size (ESS) is then calculated. Second, `ofemt` randomly
-samples grid cells without replacement using the ESS. The yield data
-from both strips (treatment and control) are used to perform a
+(`min_per_cell = 4`). Empty cells or cells with less than four data
+points are removed. The median of the yield data is calculated for each
+cell. A one-way ANOVA is fitted to the cell medians to compare
+treatments. From the residuals of the fitted model, the magnitude of
+spatial autocorrelation is estimated using the approximate profile
+likelihood estimator of spatial dependence (Rho) and the Moran index
+(MI). An effective sample size (ESS) is then calculated. Second, `ofemt`
+randomly samples grid cells without replacement using the ESS. The yield
+data from both strips (treatment and control) are used to perform a
 permutational ANOVA with 2000 iterations per test (`n_p`). This
 procedure provides a p-value for the comparison of treatment means. The
 permutational ANOVA is repeated on 200 random samples of grid cells
@@ -56,31 +62,34 @@ p-value distribution. Finally, the median p-value is calculated to
 compare the means.
 
 ``` r
-ofemt(data = ofe_f2,
-      y = "Yield_tn",
-      x = "Treatment",
-      cellsize = 9,
-      nmin_cell = 4,
-      n_p = 2000,
-      n_s = 200,
-      alpha = 0.05,
-      shift = 0,
-      alpha_bonferroni = FALSE,
-      crs = NULL)
-#> $`General information`
-#>   Cellsize Min.Obs.Cell Max.Obs.Cell Median.Obs.Cell   n ESS      Rho        MI
-#> 1        9            4            7               5 554  97 0.652285 0.5483085
+ofemt(
+  data = ofe_f2,
+  y = "Yield_tn",
+  x = "Treatment",
+  cellsize = 9,
+  min_per_cell = 4,
+  n_p = 2000,
+  n_s = 200,
+  alpha = 0.05,
+  shift = 0,
+  p_adjust_method = "none",
+  crs = NULL
+)
+#> `grid` not provided: building one internally via `make_ofe_grid()`. Pass a pre-built `ofe_grid` to inspect or reuse the selection.
 #> 
-#> $`Cells per treatment`
+#> === OFE permutation analysis ===
+#> Cellsize: 9 x 9 | Total cells: 1840 | Selected cells: 554
+#> Obs/cell (min/median/max): 4 / 5 / 7
+#> n: 554 | ESS: 97 | Rho: 0.652 | Moran's I: 0.548
 #> 
-#>    Control Fertilized 
-#>        273        281 
+#> --- Means comparison (sorted by decreasing mean) ---
+#>   Treatment Yield_tn_mean letters
+#>  Fertilized      5.280402      a 
+#>     Control      4.760095       b
 #> 
-#> --- Pairwise tests (median p-value across runs, corrected p-value) ---
-#> # A tibble: 1 × 3
-#>   Comparison             p_value  p_adj
-#>   <chr>                    <dbl>  <dbl>
-#> 1 Control vs. Fertilized  0.0208 0.0208
+#> --- Pairwise tests (median p across runs) ---
+#>              Comparison p_value  p_adj
+#>  Fertilized vs. Control  0.0055 0.0055
 ```
 
 The results show that out of the total number of cells selected (554),
@@ -93,9 +102,9 @@ that of the control was 4.76 $t\ ha^{-1}$.
 
 ## References
 
-Córdoba, M., Paccioretti, P., & Balzarini, M. (2025). A new method to compare
-treatments in unreplicated on-farm experimentation. Precision Agriculture,
-26(1), 4. https://doi.org/10.1007/s11119-024-10206-0
+Córdoba, M., Paccioretti, P., & Balzarini, M. (2025). A new method to
+compare treatments in unreplicated on-farm experimentation. Precision
+Agriculture, 26(1), 4. <https://doi.org/10.1007/s11119-024-10206-0>
 
 Vega A., Córdoba M., Balzarini M. 2019. Protocol for automating error
 removal from yield maps. Precis. Agric. 20: 1030–1044.

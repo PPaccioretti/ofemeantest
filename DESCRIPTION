@@ -5,15 +5,15 @@ Version: 0.0.900-1
 Authors@R:
     c(
       person("Mariano", "Córdoba", email = "marianoacba@agro.unc.edu.ar", 
-             role = c("aut", "cre")),
+             role = c("aut", "cph")),
       person("Pablo", "Paccioretti", email = "pablopaccioretti@agro.unc.edu.ar", 
-             role = c("aut")),
+             role = c("aut", "cre", "cph")),
       person("Monica", "Balzarini", email = "mbalzari@agro.unc.edu.ar", 
              role = c("aut"))
     )
 Description: Provides tools for comparing treatments in unreplicated on-farm
-    experiments using georeferenced data. The package includes functions for
-    constructing spatial grids, estimating the effective sample size from
+    experiments (OFE) using georeferenced data. The package includes functions
+    for constructing spatial grids, estimating the effective sample size from
     spatial autocorrelation, performing repeated permutation tests, adjusting
     pairwise comparisons, and visualizing the results. It implements the
     OFE-mean test described in Córdoba, Paccioretti and Balzarini (2025)

@@ -30,10 +30,8 @@
 #'   only polygons corresponding to single-treatment cells.
 #'
 #' @examples
-#' \dontrun{
 #'   filtered_grid <- filter_per_treatment(data = pts_sf, grid = my_ofe_grid, x = "Treatment")
 #'   plot(filtered_grid$grid_sel["CellID"])
-#' }
 #'
 #' @keywords internal
 filter_per_treatment <- function(data, grid, x) {

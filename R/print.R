@@ -29,10 +29,8 @@
 #' @return Invisibly returns the input object `x`, unchanged.
 #'
 #' @examples
-#' \dontrun{
 #'   res <- ofemt(my_data, y = "Yield", x = "Treatment")
 #'   print(res)
-#' }
 #'
 #' @export
 print.ofemt_result <- function(x, ...) {

@@ -19,7 +19,18 @@
 #'   the full grid, the selected cells, and associated metadata.
 #'
 #' @seealso [all_cells_grid()], [select_grid()]
-#'
+#' @examples
+#'  grid_ofe <- make_ofe_grid(
+#'    ofe_f2,
+#'    x = "Treatment",
+#'    cellsize = 9,
+#'    min_per_cell = 1L,
+#'    angle_deg = 0,
+#'    buffer = 0,
+#'    shift = c(0, 0),
+#'    return_points = TRUE
+#'  )
+#'  plot_grid_selection(grid_ofe)
 #' @export
 make_ofe_grid <- function(
   data,
@@ -200,19 +211,21 @@ select_grid <- function(
   )
   cell_stats <- data.frame(
     CellID = as.integer(names(trt_by_cell)),
-    n_obs  = lengths(trt_by_cell),
-    n_trt  = vapply(trt_by_cell, function(z) length(unique(z)), integer(1)),
+    n_obs = lengths(trt_by_cell),
+    n_trt = vapply(trt_by_cell, function(z) length(unique(z)), integer(1)),
     stringsAsFactors = FALSE,
     row.names = NULL
   )
-  cell_stats$treatments <- unname(lapply(trt_by_cell, function(z) sort(unique(z))))
+  cell_stats$treatments <- unname(lapply(trt_by_cell, function(z) {
+    sort(unique(z))
+  }))
 
   # Merge counts back to grid (preserve grid_all row order via match())
   grid_all <- grid_sf
   grid_all$n_obs <- NULL
   m <- match(grid_all$CellID, cell_stats$CellID)
-  grid_all$n_obs      <- cell_stats$n_obs[m]
-  grid_all$n_trt      <- cell_stats$n_trt[m]
+  grid_all$n_obs <- cell_stats$n_obs[m]
+  grid_all$n_trt <- cell_stats$n_trt[m]
   grid_all$treatments <- cell_stats$treatments[m]
   grid_all$n_obs[is.na(grid_all$n_obs)] <- 0L
   grid_all$n_trt[is.na(grid_all$n_trt)] <- 0L
