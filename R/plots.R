@@ -39,10 +39,10 @@
 #' @param ... Further arguments passed to the underlying [plot()] call for the
 #'   full-grid layer. Base engine only; ignored by the ggplot2 engine.
 #'
-#' @return With `engine = "ggplot2"`, a `ggplot` object (printed when
-#'   auto-printed at the console, and further customisable with `+`). With
-#'   `engine = "base"`, invisibly `NULL` — the function is called for the plot
-#'   it draws.
+#' @return With `engine = "ggplot2"`, a `ggplot` object. In non-interactive
+#'   contexts (e.g. scripts or inside `pdf()`), call `print()` on the returned
+#'   object to render it. With `engine = "base"`, invisibly `NULL` — the
+#'   function is called for the plot it draws.
 #'
 #' @examples
 #' \dontrun{
