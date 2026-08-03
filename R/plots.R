@@ -133,6 +133,10 @@ plot_grid_selection <- function(
   has_pts <- !is.null(data)
   if (has_pts) {
     stopifnot(inherits(data, "sf"))
+    if (nrow(data) == 0) {
+      data <- NULL
+      has_pts <- FALSE
+    }
   }
 
   if (engine == "ggplot2" && !requireNamespace("ggplot2", quietly = TRUE)) {
