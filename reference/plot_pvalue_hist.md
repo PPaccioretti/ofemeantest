@@ -10,7 +10,12 @@ significance threshold \*\*alpha\*\*.
 ## Usage
 
 ``` r
-plot_pvalue_hist(results, which = c("auto", "adjusted", "raw"), bins = 30)
+plot_pvalue_hist(
+  results,
+  which = c("auto", "adjusted", "raw"),
+  bins = 30,
+  engine = c("ggplot2", "base")
+)
 ```
 
 ## Arguments
@@ -34,10 +39,16 @@ plot_pvalue_hist(results, which = c("auto", "adjusted", "raw"), bins = 30)
 
   Number of histogram bins. Default 30.
 
+- engine:
+
+  Which graphics system to draw with, \`"ggplot2"\` (the default) or
+  \`"base"\`. If \*\*ggplot2\*\* is not installed the function falls
+  back to \`"base"\` with a message.
+
 ## Value
 
-A \`ggplot\` object if \*\*ggplot2\*\* is installed; otherwise the
-function falls back to base R \`hist()\` and returns \`NULL\` invisibly.
+With \`engine = "ggplot2"\`, a \`ggplot\` object. With \`engine =
+"base"\`, invisibly \`NULL\`.
 
 ## Examples
 
@@ -47,5 +58,6 @@ if (FALSE) { # \dontrun{
                p_adjust_method = "bonferroni")
   plot_pvalue_hist(res)              # adjusted p-values
   plot_pvalue_hist(res, which = "raw")
+  plot_pvalue_hist(res, engine = "base")
 } # }
 ```

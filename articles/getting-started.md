@@ -146,6 +146,24 @@ geometric arguments legible — a cell is dropped either because it
 straddles two treatments or because too few points landed inside it, and
 both are visible at a glance.
 
+By default the plot is built with **ggplot2**, which keeps the legend
+outside the panel — it can never land on top of the data, and the result
+does not change with the size of the graphics device. Pass
+`engine = "base"` for base graphics instead; if ggplot2 is not
+installed, that is what you get anyway, with a message. Because the
+ggplot2 engine returns a `ggplot` object, you can keep customising it:
+
+``` r
+
+plot_grid_selection(g, data = ofe_f2) +
+  ggplot2::labs(subtitle = "Lote 2, campaña 21/22")
+
+plot_grid_selection(g, data = ofe_f2, engine = "base")
+```
+
+With dense yield-monitor data the observations can swamp the cell
+boundaries; lower `point_size` until the grid shows through.
+
 The title of each plot repeats the parameters used, so successive calls
 can be compared directly:
 

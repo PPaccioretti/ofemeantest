@@ -17,7 +17,9 @@ plot_grid_selection(
   points = TRUE,
   main = NULL,
   legend = TRUE,
-  legend_pos = "topleft",
+  legend_pos = NULL,
+  point_size = NULL,
+  engine = c("ggplot2", "base"),
   ...
 )
 
@@ -65,18 +67,39 @@ plot(x, ...)
 
 - legend_pos:
 
-  Where to place the legend, passed to \[graphics::legend()\] (e.g.
-  \`"topleft"\`, \`"bottomright"\`, or \`"top"\`). Default
-  \`"topleft"\`.
+  Where to place the legend. Defaults to the engine's own sensible
+  choice: \`"right"\` (outside the panel) for \`"ggplot2"\`, and
+  \`"topleft"\` for \`"base"\`. Base-style keywords are translated for
+  the ggplot2 engine, so \`"bottomright"\` works with either; \`"none"\`
+  hides it.
+
+- point_size:
+
+  Size of the observation dots. Defaults to \`0.15\` for the ggplot2
+  engine and \`0.35\` (as \`cex\`) for the base engine. Yield-monitor
+  data runs to tens of thousands of points, where the default can still
+  read as a solid mass — lower it to see the cell boundaries underneath.
+
+- engine:
+
+  Which graphics system to draw with. \`"ggplot2"\` (the default) places
+  the legend outside the plotting panel, so it can never sit on top of
+  the data and the result does not depend on the device size. \`"base"\`
+  uses base graphics and draws the legend inside the panel. If
+  \*\*ggplot2\*\* is not installed the function falls back to \`"base"\`
+  with a message.
 
 - ...:
 
   Further arguments passed to the underlying \[plot()\] call for the
-  full-grid layer.
+  full-grid layer. Base engine only; ignored by the ggplot2 engine.
 
 ## Value
 
-Invisibly returns \`NULL\`. Called for its side effect (a base R plot).
+With \`engine = "ggplot2"\`, a \`ggplot\` object (printed when
+auto-printed at the console, and further customisable with \`+\`). With
+\`engine = "base"\`, invisibly \`NULL\` — the function is called for the
+plot it draws.
 
 ## See also
 
@@ -93,5 +116,9 @@ if (FALSE) { # \dontrun{
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
                keep_components = "full")
   plot(res)                        # grid + selection + points, no extra args
+
+  # Base graphics instead, or a ggplot you keep customising
+  plot(res, engine = "base")
+  plot(res) + ggplot2::labs(subtitle = "Lote 2")
 } # }
 ```

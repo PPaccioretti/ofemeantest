@@ -85,6 +85,22 @@
   `shift`, `angle_deg` and `buffer`. Selected cells are shaded
   translucently so the points underneath stay visible, and the plot
   title repeats the grid parameters so successive calls can be compared.
+- Both plotting functions gained an `engine` argument, `"ggplot2"`
+  (default) or `"base"`. The ggplot2 engine places the legend *outside*
+  the plotting panel, so it can never sit on top of the data and the
+  result no longer depends on the size of the graphics device — the base
+  engine has to fit the legend inside the panel, which on a dense grid
+  or a small window left it unreadable. `ggplot2` stays in `Suggests`:
+  when it is not installed both functions fall back to `"base"` with a
+  message.
+- [`plot_grid_selection()`](https://ppaccioretti.github.io/ofemeantest/reference/plot_grid_selection.md)
+  gained `point_size` (and `legend_pos`, which accepts base-style corner
+  keywords under either engine). Yield-monitor data runs to tens of
+  thousands of observations, where the default dot size still reads as a
+  solid mass; lowering it brings the cell boundaries back.
+- Unselected grid cells are now filled a very light grey instead of left
+  transparent, so they read as cells rather than as page background and
+  their legend key is visible.
 - [`plot_pvalue_hist()`](https://ppaccioretti.github.io/ofemeantest/reference/plot_pvalue_hist.md)
   now draws a solid line at the median of the distribution in addition
   to the dashed line at `alpha`, and defaults to the adjusted p-values
