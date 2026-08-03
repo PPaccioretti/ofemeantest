@@ -24,7 +24,7 @@ Imports:
     spdep,
     withr
 Suggests:
-    ggplot2,
+    ggplot2 (>= 3.4.0),
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
