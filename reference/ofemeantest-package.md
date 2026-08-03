@@ -1,7 +1,14 @@
 # ofemeantest: On Farm Experimentation Mean Test
 
-Permutation-based statistical method to support field-specific
-inferences from spatial data within the context of unreplicated OFE.
+Provides tools for comparing treatments in unreplicated on-farm
+experiments using georeferenced data. The package includes functions for
+constructing spatial grids, estimating the effective sample size from
+spatial autocorrelation, performing repeated permutation tests,
+adjusting pairwise comparisons, and visualizing the results. It
+implements the OFE-mean test described in Córdoba, Paccioretti and
+Balzarini (2025)
+[doi:10.1007/s11119-024-10206-0](https://doi.org/10.1007/s11119-024-10206-0)
+.
 
 ## See also
 
