@@ -540,7 +540,7 @@ plot_pvalue_hist <- function(
   names(medians) <- c("Comparison", "x")
 
   median_lab <- "median p"
-  alpha_lab <- paste0("\u03b1 = ", alpha)
+  alpha_lab <- sprintf("alpha = %.2f", alpha)
 
   if (engine == "ggplot2" && !requireNamespace("ggplot2", quietly = TRUE)) {
     message(
