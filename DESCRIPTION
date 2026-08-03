@@ -1,7 +1,7 @@
 Package: ofemeantest
 Type: Package
 Title: On Farm Experimentation Mean Test
-Version: 0.0.900-1
+Version: 1.0.0
 Authors@R:
     c(
       person("Mariano", "Córdoba", email = "marianoacba@agro.unc.edu.ar", 
