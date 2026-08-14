@@ -90,10 +90,25 @@ printed output.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span>  <span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="ofemt.html">ofemt</a></span><span class="op">(</span><span class="va">ofe_f2</span>, y <span class="op">=</span> <span class="st">"Yield_tn"</span>, x <span class="op">=</span> <span class="st">"Treatment"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> `grid` not provided: building one internally via `make_ofe_grid()`. Pass a pre-built `ofe_grid` to inspect or reuse the selection.</span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> === OFE permutation analysis ===</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Cellsize: 10 x 10 | Total cells: 1476 | Selected cells: 468</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Obs/cell (min/median/max): 4 / 6 / 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> n: 468 | ESS: 89 | Rho: 0.630 | Moran's I: 0.577</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> --- Means comparison (sorted by decreasing mean) ---</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Treatment Yield_tn_mean letters</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Fertilized      5.329230      a </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Control      4.766786       b</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> --- Pairwise tests (median p across runs) ---</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              Comparison p_value p_adj</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Fertilized vs. Control   0.013 0.013</span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

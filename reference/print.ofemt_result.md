@@ -51,8 +51,23 @@ printed output.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment")
+#> `grid` not provided: building one internally via `make_ofe_grid()`. Pass a pre-built `ofe_grid` to inspect or reuse the selection.
   print(res)
-} # }
+#> 
+#> === OFE permutation analysis ===
+#> Cellsize: 10 x 10 | Total cells: 1476 | Selected cells: 468
+#> Obs/cell (min/median/max): 4 / 6 / 10
+#> n: 468 | ESS: 89 | Rho: 0.630 | Moran's I: 0.577
+#> 
+#> --- Means comparison (sorted by decreasing mean) ---
+#>   Treatment Yield_tn_mean letters
+#>  Fertilized      5.329230      a 
+#>     Control      4.766786       b
+#> 
+#> --- Pairwise tests (median p across runs) ---
+#>              Comparison p_value p_adj
+#>  Fertilized vs. Control   0.013 0.013
+# }
 ```

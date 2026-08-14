@@ -225,14 +225,17 @@ Agriculture*, 26, Article 4.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
                cellsize = 10, min_per_cell = 4, alpha = 0.05)
+#> `grid` not provided: building one internally via `make_ofe_grid()`. Pass a pre-built `ofe_grid` to inspect or reuse the selection.
 
   # Keep the geometries to inspect how the grid lands on the points
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
                cellsize = 10, min_per_cell = 4,
                keep_components = "full")
+#> `grid` not provided: building one internally via `make_ofe_grid()`. Pass a pre-built `ofe_grid` to inspect or reuse the selection.
   plot(res)
-} # }
+
+# }
 ```
