@@ -29,7 +29,7 @@
 #' @return Invisibly returns the input object `x`, unchanged.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment")
 #'   print(res)
 #' }

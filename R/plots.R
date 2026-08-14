@@ -45,7 +45,7 @@
 #'   function is called for the plot it draws.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   g <- make_ofe_grid(ofe_f2, x = "Treatment", cellsize = 9, min_per_cell = 4)
 #'   plot_grid_selection(g, data = ofe_f2)
 #'   plot(g, data = ofe_f2)          # same thing
@@ -473,7 +473,7 @@ grid_params_label <- function(params) {
 #'   `engine = "base"`, invisibly `NULL`.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
 #'                p_adjust_method = "bonferroni")
 #'   plot_pvalue_hist(res)              # adjusted p-values

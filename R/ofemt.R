@@ -127,7 +127,7 @@
 #' @seealso [make_ofe_grid()], [plot_grid_selection()], [plot_pvalue_hist()]
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
 #'                cellsize = 10, min_per_cell = 4, alpha = 0.05)
 #'

@@ -78,7 +78,7 @@ cell boundaries is the quickest way to judge the effect of `cellsize`,
 `shift`, `angle_deg` and `buffer`.
 }
 \examples{
-\dontrun{
+\donttest{
   g <- make_ofe_grid(ofe_f2, x = "Treatment", cellsize = 9, min_per_cell = 4)
   plot_grid_selection(g, data = ofe_f2)
   plot(g, data = ofe_f2)          # same thing

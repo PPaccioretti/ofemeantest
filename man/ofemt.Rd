@@ -154,7 +154,7 @@ labels containing spaces or special characters are preserved in the
 results.
 }
 \examples{
-\dontrun{
+\donttest{
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
                cellsize = 10, min_per_cell = 4, alpha = 0.05)
 

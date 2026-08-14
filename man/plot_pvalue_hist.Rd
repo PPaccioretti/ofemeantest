@@ -40,7 +40,7 @@ at the **median** of the distribution — the value [ofemt()] reports for that
 comparison — and a dashed line at the significance threshold **alpha**.
 }
 \examples{
-\dontrun{
+\donttest{
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment", cellsize = 9,
                p_adjust_method = "bonferroni")
   plot_pvalue_hist(res)              # adjusted p-values
