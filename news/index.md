@@ -2,6 +2,8 @@
 
 ## ofemeantest 1.0.0
 
+CRAN release: 2026-08-20
+
 ## ofemeantest 0.0.900
 
 ### Breaking changes
