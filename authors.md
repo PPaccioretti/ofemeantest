@@ -11,7 +11,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/PPaccioretti/ofemeantest/blob/v1.0.0/inst/CITATION)
+[`inst/CITATION`](https://github.com/PPaccioretti/ofemeantest/blob/main/inst/CITATION)
 
 Córdoba, M., Paccioretti, P., & Balzarini, M. (2025). A new method to
 compare treatments in unreplicated on-farm experimentation. Precision
