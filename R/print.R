@@ -16,7 +16,8 @@
 #'   \item **General information:** Cell size, number of selected cells, and
 #'     per-cell observation counts (minimum, median, maximum).
 #'   \item **Spatial statistics:** Sample size (`n`), effective sample size
-#'     (`ESS`), spatial correlation (`Rho`), and Moran’s *I*.
+#'     (`ESS`, with the estimator used), spatial correlation (`Rho`), and
+#'     Moran’s *I*.
 #'   \item **Means comparison:** Shows the first 10 rows of the table of
 #'     comparisons between treatment means.
 #'   \item **ANOVA permutation test:** Displays pairwise tests summarizing
@@ -57,10 +58,12 @@ print.ofemt_result <- function(x, ...) {
       gi$Median.Obs.Cell[1],
       gi$Max.Obs.Cell[1]
     ))
+    ess_method <- if ("ESS.Method" %in% names(gi)) gi$ESS.Method[1] else NA
     cat(sprintf(
-      "n: %d | ESS: %d | Rho: %.3f | Moran's I: %.3f\n",
+      "n: %d | ESS: %d%s | Rho: %.3f | Moran's I: %.3f\n",
       gi$n[1],
       gi$ESS[1],
+      if (is.na(ess_method)) "" else sprintf(" (%s)", ess_method),
       gi$Rho[1],
       gi$MoranI[1]
     ))

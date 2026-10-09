@@ -1,5 +1,23 @@
 # ofemeantest (development version)
 
+## New features
+
+* **Alternative effective sample size estimator.** `ofemt()` gains
+  `ess_method = c("griffith", "dutilleul")`. The default (`"griffith"`) is
+  unchanged: APLE `rho` plugged into Griffith's (2005) formula. The new
+  `"dutilleul"` option computes the ESS of the modified *t*-test for two
+  spatially correlated processes (Clifford, Richardson & Hemon 1989;
+  Dutilleul 1993) from a Moran's *I* correlogram of the ANOVA residuals
+  over `ess_nclass` equal-width distance classes (default 13). It is a pure
+  base-R implementation whose value is identical to
+  `SpatialPack::modified.ttest()$ESS` (SpatialPack is only used in the
+  test-suite, as a `Suggests`). The estimator does not go through a single
+  `rho`, so it is not driven to ~1 by the APLE estimate on dense data.
+  The method used is reported in `General information$ESS.Method`,
+  `params$ess_method` / `params$ess_nclass`, and by `print()`; with
+  `"dutilleul"` the per-class correlogram is returned as `ess_correlogram`
+  (#16).
+
 # ofemeantest 1.0.0
 
 # ofemeantest 0.0.900

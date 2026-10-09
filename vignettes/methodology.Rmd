@@ -77,7 +77,40 @@ n^{*} = n \\left(1 - a \\cdot \\frac{n-1}{n} \\cdot \\left(1 - \\exp(-b\\rho + c
 with the coefficients given in the published formula. We also report
 **Moran's *I*** of the residuals as a sanity check on the magnitude of
 the autocorrelation. \\(\\rho\\) is constrained to \\([0, 1]\\) before
-entering the ESS formula.
+entering the ESS formula. This is the default, `ess_method = "griffith"`.
+
+### 3.1 Alternative: the Clifford-Dutilleul ESS
+
+On dense yield-monitor data the APLE estimate of \\(\\rho\\) can approach
+1, and Griffith's formula then collapses the ESS towards 1. As an
+alternative, `ess_method = "dutilleul"` computes the effective sample
+size of the modified *t*-test for the correlation between two spatially
+autocorrelated processes (Clifford, Richardson & Hemon, 1989; Dutilleul,
+1993), the quantity returned by `SpatialPack::modified.ttest()`.
+
+The pairwise distances between the selected cells are split into
+`ess_nclass` equal-width classes (13 by default, as in SpatialPack),
+and Moran's *I* of the residuals is computed within each class. The
+spatial correlation matrix of the residuals is approximated by
+\\(R_{ij} = I_{k(i,j)}\\) with \\(R_{ii} = 1\\), and with the centring
+matrix \\(B = I - \\mathbf{1}\\mathbf{1}'/n\\),
+
+\\[
+n^{*} = 1 + \\frac{\\operatorname{tr}(BR)^2}{\\operatorname{tr}(BRBR)}.
+\\]
+
+This is Dutilleul's (1993) correction of the Clifford et al. (1989)
+estimator, written for two processes that share the residual correlation
+structure (\\(R_x = R_y = R\\)). It does not go through a single
+\\(\\rho\\). The estimator is implemented in base R inside the package
+and gives the same value as SpatialPack; the per-class correlogram is
+returned as `res$ess_correlogram`. \\(n^{*}\\) is capped at \\(n\\).
+
+Neither estimator dominates the other. On `ofe_f2` with `cellsize = 9`
+Griffith's ESS is 97 and Dutilleul's is 75; with `cellsize = 4` (1641
+cells) they are 197 and 116. The Dutilleul ESS depends on the number of
+distance classes, because a coarse first class dilutes the short-range
+autocorrelation.
 
 ## 4. Permutational ANOVA on subsamples
 
@@ -142,6 +175,11 @@ verbatim.
 - Córdoba, M., Paccioretti, P., & Balzarini, M. (2025). A new method to compare
   treatments in unreplicated on-farm experimentation. Precision Agriculture,
   26(1), 4. https://doi.org/10.1007/s11119-024-10206-0
+- Clifford, P., Richardson, S. & Hemon, D. (1989). Assessing the
+  significance of the correlation between two spatial processes.
+  *Biometrics* 45: 123-134.
+- Dutilleul, P. (1993). Modifying the *t* test for assessing the
+  correlation between two spatial processes. *Biometrics* 49: 305-314.
 - Griffith, D.A. (2005). Effective geographic sample size in the
   presence of spatial autocorrelation. *Annals of the Association of
   American Geographers* 95(4): 740–760.

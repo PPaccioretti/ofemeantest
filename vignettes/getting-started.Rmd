@@ -78,7 +78,9 @@ Key fields in the printed result:
 - **Selected cells**: cells retained after filtering by single
   treatment and `min_per_cell`.
 - **n / ESS**: nominal sample size and effective sample size given
-  the spatial autocorrelation of the residuals.
+  the spatial autocorrelation of the residuals. The estimator is shown
+  in parentheses: `griffith` (default) or `dutilleul`, selected with the
+  `ess_method` argument (see `vignette("methodology")`).
 - **Rho / Moran's I**: spatial autocorrelation indicators.
 - **Means comparison**: per-treatment median yield (in cells) and
   compact letter display from the multiple-comparison procedure.

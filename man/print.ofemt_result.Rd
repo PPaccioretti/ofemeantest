@@ -28,7 +28,8 @@ This print method provides a human-readable summary in the console:
   \item **General information:** Cell size, number of selected cells, and
     per-cell observation counts (minimum, median, maximum).
   \item **Spatial statistics:** Sample size (`n`), effective sample size
-    (`ESS`), spatial correlation (`Rho`), and Moran’s *I*.
+    (`ESS`, with the estimator used), spatial correlation (`Rho`), and
+    Moran’s *I*.
   \item **Means comparison:** Shows the first 10 rows of the table of
     comparisons between treatment means.
   \item **ANOVA permutation test:** Displays pairwise tests summarizing

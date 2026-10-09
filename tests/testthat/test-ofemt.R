@@ -321,3 +321,72 @@ test_that("keep_components controls the embedded geometries", {
   expect_true("residuos" %in% names(full$cell_medians))
   expect_true("CellID" %in% names(full$points_joined))
 })
+
+test_that("ess_method = 'dutilleul' computes the Clifford-Dutilleul ESS", {
+  skip_if_no_spatial_deps()
+  data("ofe_f2", package = "ofemeantest", envir = environment())
+
+  args <- list(
+    data         = ofe_f2,
+    y            = "Yield_tn",
+    x            = "Treatment",
+    cellsize     = 9,
+    min_per_cell = 4,
+    n_p          = 50,
+    n_s          = 5,
+    seed         = 7L,
+    keep_components = "full"
+  )
+  r_g <- suppressMessages(suppressWarnings(do.call(ofemt, args)))
+  r_d <- suppressMessages(suppressWarnings(do.call(
+    ofemt, c(args, list(ess_method = "dutilleul"))
+  )))
+
+  gi <- r_d[["General information"]]
+  expect_equal(gi$ESS.Method, "dutilleul")
+  expect_equal(r_g[["General information"]]$ESS.Method, "griffith")
+  expect_equal(r_d$params$ess_method, "dutilleul")
+  expect_equal(r_d$params$ess_nclass, 13L)
+  expect_true(is.na(r_g$params$ess_nclass))
+
+  # Same grid, residuals, rho and Moran's I; only the ESS changes.
+  expect_equal(gi$Selected.Cells, 554)
+  expect_equal(gi$Rho, r_g[["General information"]]$Rho)
+  expect_equal(gi$MoranI, r_g[["General information"]]$MoranI)
+  expect_lte(gi$ESS, gi$n)
+  # Reference value for ofe_f2 / cellsize 9 (SpatialPack gives 75.17).
+  expect_equal(gi$ESS, 75)
+
+  # The ESS is what ess_dutilleul() gives on the residuals.
+  cm <- r_d$cell_medians
+  by_hand <- ofemeantest:::ess_dutilleul(
+    cm$residuos, cm$residuos, sf::st_coordinates(cm)
+  )
+  expect_equal(gi$ESS, round(by_hand$ESS))
+
+  cg <- r_d$ess_correlogram
+  expect_s3_class(cg, "data.frame")
+  expect_equal(nrow(cg), 13L)
+  expect_named(cg, c("upper_bound", "n_pairs", "moran_I"))
+  expect_equal(cg$moran_I, unname(by_hand$imoran[, 1]))
+  expect_null(r_g$ess_correlogram)
+
+  # ess_nclass is honoured and validated.
+  r_d6 <- suppressMessages(suppressWarnings(do.call(
+    ofemt, c(args, list(ess_method = "dutilleul", ess_nclass = 6))
+  )))
+  expect_equal(nrow(r_d6$ess_correlogram), 6L)
+  expect_equal(r_d6$params$ess_nclass, 6L)
+  expect_error(
+    do.call(ofemt, c(args, list(ess_method = "dutilleul", ess_nclass = 0))),
+    "ess_nclass"
+  )
+  expect_error(
+    do.call(ofemt, c(args, list(ess_method = "clifford"))),
+    "should be one of"
+  )
+
+  # print() reports the estimator.
+  expect_output(print(r_d), "ESS: 75 [(]dutilleul[)]")
+  expect_output(print(r_g), "ESS: 97 [(]griffith[)]")
+})

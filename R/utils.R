@@ -92,3 +92,183 @@ quote_name <- function(nm) {
 sample_values <- function(x, size) {
   x[sample.int(length(x), size = min(size, length(x)))]
 }
+
+#' Effective sample size from distance-class Moran's I (Clifford-Dutilleul)
+#'
+#' @description
+#' Effective sample size (ESS) for the correlation between two spatially
+#' autocorrelated processes, as used by the modified *t*-test of Clifford,
+#' Richardson and Hemon (1989) with the correction of Dutilleul (1993). It is
+#' numerically identical to the `ESS` component returned by
+#' `SpatialPack::modified.ttest()`, re-implemented here in base R so that the
+#' package does not take on a new dependency.
+#'
+#' @details
+#' All pairwise distances between the `n` locations are split into `nclass`
+#' equal-width classes spanning `[0, max distance]`. For each class \eqn{k}
+#' and each process, Moran's \eqn{I_k} is computed over the pairs whose
+#' distance falls in that class. The spatial correlation matrix of a process
+#' is then approximated by \eqn{R_{ij} = I_{k(i,j)}} for \eqn{i \ne j} and
+#' \eqn{R_{ii} = 1}, and the effective sample size is
+#' \deqn{M = 1 + \frac{\mathrm{tr}(B R_x)\,\mathrm{tr}(B R_y)}{\mathrm{tr}(B R_x B R_y)},
+#'   \qquad B = I - \tfrac{1}{n}\mathbf{1}\mathbf{1}'.}
+#' Passing the same vector as `x` and `y` gives the ESS of a single process
+#' (\eqn{R_x = R_y}), which is how [ofemt()] uses it on the ANOVA residuals.
+#'
+#' The \eqn{n \times n} distance matrix is never materialised: locations are
+#' processed in blocks of `chunk_size` rows, so memory grows with
+#' `chunk_size * n` instead of `n^2`. The result does not depend on
+#' `chunk_size`.
+#'
+#' Distance classes that contain no pair of locations get `NA` in `imoran`;
+#' they do not contribute to `ESS`.
+#'
+#' @param x,y Numeric vectors of equal length, one value per location.
+#' @param coords Numeric matrix (or data frame) with two columns of projected
+#'   coordinates, one row per location.
+#' @param nclass Integer, number of equal-width distance classes used to
+#'   build the Moran's *I* correlogram. `SpatialPack` defaults to 13.
+#' @param chunk_size Integer, number of locations processed per block. The
+#'   default targets roughly 2e6 pairwise distances per block.
+#' @return A list with components
+#'   \describe{
+#'     \item{`ESS`}{The effective sample size (numeric scalar).}
+#'     \item{`upper_bounds`}{Upper bound of each distance class.}
+#'     \item{`card`}{Number of location pairs in each class.}
+#'     \item{`imoran`}{`nclass x 2` matrix with Moran's *I* of `x` and `y`
+#'       per class.}
+#'   }
+#' @references
+#' Clifford, P., Richardson, S. and Hemon, D. (1989). Assessing the
+#' significance of the correlation between two spatial processes.
+#' \emph{Biometrics}, 45, 123-134.
+#'
+#' Dutilleul, P. (1993). Modifying the t test for assessing the correlation
+#' between two spatial processes. \emph{Biometrics}, 49, 305-314.
+#'
+#' Osorio, F. and Vallejos, R. (2024). SpatialPack: Tools for assessment the
+#' association between two spatial processes. R package version 0.4-1.
+#' \url{https://CRAN.R-project.org/package=SpatialPack}
+#' @keywords internal
+ess_dutilleul <- function(x, y, coords, nclass = 13L, chunk_size = NULL) {
+  x <- as.numeric(x)
+  y <- as.numeric(y)
+  coords <- as.matrix(coords)
+  if (ncol(coords) < 2L) {
+    stop("`coords` must have two columns.", call. = FALSE)
+  }
+  coords <- coords[, 1:2, drop = FALSE]
+  storage.mode(coords) <- "double"
+  n <- length(x)
+  if (length(y) != n || nrow(coords) != n) {
+    stop(
+      "`x`, `y` and `coords` must describe the same number of locations.",
+      call. = FALSE
+    )
+  }
+  if (n < 3L) {
+    stop("At least three locations are needed.", call. = FALSE)
+  }
+  if (anyNA(x) || anyNA(y) || anyNA(coords)) {
+    stop("Missing values are not allowed.", call. = FALSE)
+  }
+  nclass <- as.integer(nclass)
+  if (length(nclass) != 1L || is.na(nclass) || nclass < 1L) {
+    stop("`nclass` must be a single positive integer.", call. = FALSE)
+  }
+  xc <- x - mean(x)
+  yc <- y - mean(y)
+  xvar <- sum(xc^2) / n
+  yvar <- sum(yc^2) / n
+  if (xvar <= 0 || yvar <= 0) {
+    stop("`x` and `y` must not be constant.", call. = FALSE)
+  }
+
+  if (is.null(chunk_size)) {
+    chunk_size <- max(1L, min(n, as.integer(2e6 %/% n)))
+  }
+  chunk_size <- max(1L, as.integer(chunk_size))
+  blocks <- split(seq_len(n), ceiling(seq_len(n) / chunk_size))
+  dist_block <- function(ii) {
+    dx <- outer(coords[ii, 1L], coords[, 1L], "-")
+    dy <- outer(coords[ii, 2L], coords[, 2L], "-")
+    sqrt(dx * dx + dy * dy)
+  }
+
+  # Pass 1: the largest pairwise distance fixes the class width.
+  maxdist <- 0
+  for (ii in blocks) {
+    maxdist <- max(maxdist, dist_block(ii))
+  }
+  if (maxdist <= 0) {
+    stop("All locations coincide; distance classes cannot be built.",
+      call. = FALSE
+    )
+  }
+  # Accumulated sum (not `seq_len(nclass) * width`) so that the bounds are
+  # bit-for-bit those of SpatialPack.
+  upper_bounds <- cumsum(rep(maxdist / nclass, nclass))
+
+  # Pass 2: per-class cross-product sums (for Moran's I) and, per location,
+  # the number of other locations in each class (enough to rebuild every
+  # row sum of R without storing R).
+  lev <- seq_len(nclass)
+  sx <- numeric(nclass)
+  sy <- numeric(nclass)
+  cnt <- matrix(0, n, nclass)
+  for (ii in blocks) {
+    m <- length(ii)
+    d <- dist_block(ii)
+    # First class k with d <= upper_bounds[k]; anything beyond the last
+    # bound (only possible through rounding) goes to the last class.
+    k <- findInterval(d, upper_bounds, left.open = TRUE) + 1L
+    k[k > nclass] <- nclass
+    k <- matrix(k, nrow = m)
+    k[cbind(seq_len(m), ii)] <- 0L # drop the i == j pairs
+    kv <- as.vector(k)
+    keep <- kv > 0L
+    kf <- factor(kv[keep], levels = lev)
+    px <- as.vector(outer(xc[ii], xc))[keep]
+    py <- as.vector(outer(yc[ii], yc))[keep]
+    sx <- sx + as.vector(tapply(px, kf, sum, default = 0))
+    sy <- sy + as.vector(tapply(py, kf, sum, default = 0))
+    idx <- (as.vector(row(k)) - 1L) * nclass + kv
+    cnt[ii, ] <- matrix(
+      tabulate(idx[keep], nbins = m * nclass),
+      nrow = m,
+      byrow = TRUE
+    )
+  }
+  # Every unordered pair was visited twice (i, j) and (j, i).
+  pairs_twice <- colSums(cnt)
+  card <- pairs_twice / 2
+  ix <- (sx / pairs_twice) / xvar
+  iy <- (sy / pairs_twice) / yvar
+  ix[pairs_twice == 0] <- NA_real_
+  iy[pairs_twice == 0] <- NA_real_
+
+  # Dutilleul (1993): M = 1 + tr(B Rx) tr(B Ry) / tr(B Rx B Ry).
+  # With R_ij = I_k(i,j), R_ii = 1, the traces only need the row sums of
+  # Rx and Ry and the per-class pair counts.
+  ix0 <- ifelse(is.na(ix), 0, ix)
+  iy0 <- ifelse(is.na(iy), 0, iy)
+  rx <- 1 + as.vector(cnt %*% ix0)
+  ry <- 1 + as.vector(cnt %*% iy0)
+  sxx <- sum(rx)
+  syy <- sum(ry)
+  sxy <- sum(rx * ry)
+  tr_brx <- n - sxx / n
+  tr_bry <- n - syy / n
+  tr_brxbry <- n + sum(pairs_twice * ix0 * iy0) +
+    (sxx * syy / n - 2 * sxy) / n
+  ess <- 1 + tr_brx * tr_bry / tr_brxbry
+
+  imoran <- cbind(x = ix, y = iy)
+  rownames(imoran) <- NULL
+  list(
+    ESS = ess,
+    upper_bounds = upper_bounds,
+    card = card,
+    imoran = imoran
+  )
+}

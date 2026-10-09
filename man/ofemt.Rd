@@ -20,7 +20,9 @@ ofemt(
   grid = NULL,
   angle_deg = 0,
   buffer = 0,
-  seed = 7L
+  seed = 7L,
+  ess_method = c("griffith", "dutilleul"),
+  ess_nclass = 13L
 )
 }
 \arguments{
@@ -72,6 +74,26 @@ the grid is generated internally using `cellsize`, `min_per_cell`,
 \item{seed}{integer; controls reproducibility of the permutation sampling
 (the grid itself is deterministic from its construction arguments). Set
 `seed = NULL` to let results vary across runs.}
+
+\item{ess_method}{How the effective sample size is estimated from the
+ANOVA residuals on cell medians. One of:
+\describe{
+  \item{`"griffith"` (default)}{The spatial autocorrelation `rho` is
+    estimated with the APLE (Li, Calder & Cressie 2007) and plugged into
+    Griffith's (2005) formula (see [n_eff()]).}
+  \item{`"dutilleul"`}{The ESS of the modified *t*-test for two spatially
+    correlated processes (Clifford, Richardson & Hemon 1989; Dutilleul
+    1993), computed from a Moran's *I* correlogram of the residuals over
+    `ess_nclass` equal-width distance classes (see [ess_dutilleul()]).
+    It is numerically identical to the `ESS` returned by
+    `SpatialPack::modified.ttest()` when both processes are the
+    residuals.}
+}
+See Details.}
+
+\item{ess_nclass}{integer; number of distance classes for the Moran's *I*
+correlogram used when `ess_method = "dutilleul"` (ignored otherwise).
+`13` matches the default of `SpatialPack::modified.ttest()`.}
 }
 \value{
 An object of class `ofemt_result`: a list with
@@ -80,7 +102,8 @@ An object of class `ofemt_result`: a list with
       number of cells in the full grid and in the selection, the
       min/median/max number of observations per selected cell, the number of
       cells entering the analysis (`n`), the effective sample size (`ESS`),
-      the spatial autocorrelation estimate (`Rho`) and Moran's *I*.}
+      the spatial autocorrelation estimate (`Rho`), Moran's *I* and the
+      ESS estimator used (`ESS.Method`).}
     \item{`Cells per treatment`}{`table` of selected cells per treatment.}
     \item{`ANOVA permutation test`}{One row per pairwise comparison, with the
       median p-value across runs (`p_value`) and its multiplicity-adjusted
@@ -95,8 +118,12 @@ An object of class `ofemt_result`: a list with
       [plot_pvalue_hist()] draws and what you would use to inspect the
       run-to-run variability behind the reported medians.}
     \item{`params`}{The settings actually used (grid geometry, `n_p`, `n_s`,
-      `alpha`, `p_adjust_method`, `seed`, and `grid_source`, which records
-      whether the grid was supplied or built internally).}
+      `alpha`, `p_adjust_method`, `seed`, `ess_method`, `ess_nclass`, and
+      `grid_source`, which records whether the grid was supplied or built
+      internally).}
+    \item{`ess_correlogram`}{Only when `ess_method = "dutilleul"`: a data
+      frame with one row per distance class (`upper_bound`, `n_pairs`,
+      `moran_I`) describing the correlogram the ESS was computed from.}
     \item{`grid`, `cell_medians`, `points_joined`}{Optional spatial
       components; see `keep_components`.}
   }
@@ -128,6 +155,22 @@ treatments in unreplicated on-farm experiments. The procedure involves:
 The median of each empirical p-value distribution is reported as the
 p-value associated with the null hypothesis of no treatment effect.
 
+\strong{Effective sample size}
+
+Both estimators work on the residuals of the one-way ANOVA on cell
+medians. With `ess_method = "griffith"` the residual autocorrelation is
+summarised by a single parameter `rho` (APLE), which Griffith's formula
+maps to an ESS; as `rho` approaches 1 the ESS collapses towards 1, which
+can happen on dense data. With `ess_method = "dutilleul"` the spatial
+correlation matrix of the residuals is built from Moran's *I* computed on
+`ess_nclass` distance classes, and the ESS is
+\deqn{1 + \mathrm{tr}(B R)^2 / \mathrm{tr}(B R B R),}
+with \eqn{B} the centring matrix (Dutilleul 1993). This does not go
+through `rho`. `Rho` (APLE) and Moran's *I* are reported in both cases as
+descriptive diagnostics. The Dutilleul ESS is capped at `n`. Neither
+estimator is uniformly larger than the other: on `ofe_f2` with
+`cellsize = 9` the Dutilleul ESS is smaller than Griffith's.
+
 For experiments with more than two treatments, all pairwise treatment
 comparisons are performed.
 
@@ -158,6 +201,12 @@ results.
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
                cellsize = 10, min_per_cell = 4, alpha = 0.05)
 
+  # Effective sample size from the Clifford-Dutilleul modified t-test
+  res_d <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
+                 cellsize = 10, min_per_cell = 4,
+                 ess_method = "dutilleul")
+  res_d$ess_correlogram
+
   # Keep the geometries to inspect how the grid lands on the points
   res <- ofemt(ofe_f2, y = "Yield_tn", x = "Treatment",
                cellsize = 10, min_per_cell = 4,
@@ -170,6 +219,17 @@ Córdoba, M., Paccioretti, P. and Balzarini, M. (2025).
 A new method to compare treatments in unreplicated on-farm experimentation.
 \emph{Precision Agriculture}, 26, Article 4.
 \doi{10.1007/s11119-024-10206-0}
+
+Clifford, P., Richardson, S. and Hemon, D. (1989). Assessing the
+significance of the correlation between two spatial processes.
+\emph{Biometrics}, 45, 123-134.
+
+Dutilleul, P. (1993). Modifying the t test for assessing the correlation
+between two spatial processes. \emph{Biometrics}, 49, 305-314.
+
+Griffith, D.A. (2005). Effective geographic sample size in the presence of
+spatial autocorrelation. \emph{Annals of the Association of American
+Geographers}, 95(4), 740-760.
 }
 \seealso{
 [make_ofe_grid()], [plot_grid_selection()], [plot_pvalue_hist()]
