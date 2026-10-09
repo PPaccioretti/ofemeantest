@@ -98,10 +98,10 @@ sample_values <- function(x, size) {
 #' @description
 #' Effective sample size (ESS) for the correlation between two spatially
 #' autocorrelated processes, as used by the modified *t*-test of Clifford,
-#' Richardson and Hemon (1989) with the correction of Dutilleul (1993). It is
-#' numerically identical to the `ESS` component returned by
-#' `SpatialPack::modified.ttest()`, re-implemented here in base R so that the
-#' package does not take on a new dependency.
+#' Richardson and Hemon (1989) with the correction of Dutilleul (1993). It
+#' reproduces the `ESS` component returned by `SpatialPack::modified.ttest()`
+#' (up to floating-point summation order, about 1e-10 relative), re-implemented
+#' here in base R so that the package does not take on a new dependency.
 #'
 #' @details
 #' All pairwise distances between the `n` locations are split into `nclass`
@@ -118,7 +118,11 @@ sample_values <- function(x, size) {
 #' The \eqn{n \times n} distance matrix is never materialised: locations are
 #' processed in blocks of `chunk_size` rows, so memory grows with
 #' `chunk_size * n` instead of `n^2`. The result does not depend on
-#' `chunk_size`.
+#' `chunk_size`. Time is \eqn{O(n^2)}, as in SpatialPack: all pairwise
+#' distances have to be classified once. The maximum distance that fixes
+#' the class width is taken from the convex hull, so only one pass over the
+#' pairs is made. When `x` and `y` are the same vector the work for `y` is
+#' skipped.
 #'
 #' Distance classes that contain no pair of locations get `NA` in `imoran`;
 #' they do not contribute to `ESS`.
@@ -184,21 +188,19 @@ ess_dutilleul <- function(x, y, coords, nclass = 13L, chunk_size = NULL) {
     stop("`x` and `y` must not be constant.", call. = FALSE)
   }
 
-  if (is.null(chunk_size)) {
-    chunk_size <- max(1L, min(n, as.integer(2e6 %/% n)))
-  }
-  chunk_size <- max(1L, as.integer(chunk_size))
-  blocks <- split(seq_len(n), ceiling(seq_len(n) / chunk_size))
-  dist_block <- function(ii) {
-    dx <- outer(coords[ii, 1L], coords[, 1L], "-")
-    dy <- outer(coords[ii, 2L], coords[, 2L], "-")
-    sqrt(dx * dx + dy * dy)
-  }
+  same_xy <- identical(x, y)
 
-  # Pass 1: the largest pairwise distance fixes the class width.
-  maxdist <- 0
-  for (ii in blocks) {
-    maxdist <- max(maxdist, dist_block(ii))
+  # The largest pairwise distance fixes the class width. It is attained
+  # between two vertices of the convex hull, so an O(h^2) search over the
+  # hull replaces a full O(n^2) pass. `chull()` handles collinear input by
+  # returning the two extreme points.
+  hull <- grDevices::chull(coords)
+  hx <- coords[hull, 1L]
+  hy <- coords[hull, 2L]
+  maxdist <- if (length(hull) < 2L) {
+    0
+  } else {
+    max(sqrt(outer(hx, hx, "-")^2 + outer(hy, hy, "-")^2))
   }
   if (maxdist <= 0) {
     stop("All locations coincide; distance classes cannot be built.",
@@ -209,35 +211,55 @@ ess_dutilleul <- function(x, y, coords, nclass = 13L, chunk_size = NULL) {
   # bit-for-bit those of SpatialPack.
   upper_bounds <- cumsum(rep(maxdist / nclass, nclass))
 
-  # Pass 2: per-class cross-product sums (for Moran's I) and, per location,
-  # the number of other locations in each class (enough to rebuild every
-  # row sum of R without storing R).
-  lev <- seq_len(nclass)
+  # Single pass over the pairs, in blocks of rows. Per class we accumulate
+  # the cross-product sums (for Moran's I) and, per location, the number of
+  # other locations in each class, which is enough to rebuild every row sum
+  # of R without storing R. Class 0 is reserved for the i == j entries.
+  if (is.null(chunk_size)) {
+    chunk_size <- max(1L, min(n, as.integer(2e6 %/% n)))
+  }
+  chunk_size <- max(1L, as.integer(chunk_size))
+  blocks <- split(seq_len(n), ceiling(seq_len(n) / chunk_size))
   sx <- numeric(nclass)
   sy <- numeric(nclass)
   cnt <- matrix(0, n, nclass)
+  nc1 <- nclass + 1L
+  cx <- coords[, 1L]
+  cy <- coords[, 2L]
   for (ii in blocks) {
     m <- length(ii)
-    d <- dist_block(ii)
+    d <- outer(cx[ii], cx, "-")^2 + outer(cy[ii], cy, "-")^2
+    d <- sqrt(d)
     # First class k with d <= upper_bounds[k]; anything beyond the last
     # bound (only possible through rounding) goes to the last class.
     k <- findInterval(d, upper_bounds, left.open = TRUE) + 1L
     k[k > nclass] <- nclass
-    k <- matrix(k, nrow = m)
-    k[cbind(seq_len(m), ii)] <- 0L # drop the i == j pairs
-    kv <- as.vector(k)
-    keep <- kv > 0L
-    kf <- factor(kv[keep], levels = lev)
-    px <- as.vector(outer(xc[ii], xc))[keep]
-    py <- as.vector(outer(yc[ii], yc))[keep]
-    sx <- sx + as.vector(tapply(px, kf, sum, default = 0))
-    sy <- sy + as.vector(tapply(py, kf, sum, default = 0))
-    idx <- (as.vector(row(k)) - 1L) * nclass + kv
-    cnt[ii, ] <- matrix(
-      tabulate(idx[keep], nbins = m * nclass),
-      nrow = m,
-      byrow = TRUE
+    k[(ii - 1L) * m + seq_len(m)] <- 0L # column-major index of (r, ii[r])
+    if (same_xy) {
+      g <- rowsum(as.vector(outer(xc[ii], xc)), k, reorder = TRUE)
+    } else {
+      g <- rowsum(
+        cbind(as.vector(outer(xc[ii], xc)), as.vector(outer(yc[ii], yc))),
+        k,
+        reorder = TRUE
+      )
+    }
+    cl <- as.integer(rownames(g))
+    keep <- cl > 0L
+    sx[cl[keep]] <- sx[cl[keep]] + g[keep, 1L]
+    if (!same_xy) {
+      sy[cl[keep]] <- sy[cl[keep]] + g[keep, 2L]
+    }
+    # Row r, class k -> bin (r - 1) * (nclass + 1) + k + 1; column 1 of the
+    # resulting matrix holds the diagonal entries and is dropped.
+    bins <- tabulate(
+      (rep.int(seq_len(m), n) - 1L) * nc1 + k + 1L,
+      nbins = m * nc1
     )
+    cnt[ii, ] <- matrix(bins, nrow = m, byrow = TRUE)[, -1L, drop = FALSE]
+  }
+  if (same_xy) {
+    sy <- sx
   }
   # Every unordered pair was visited twice (i, j) and (j, i).
   pairs_twice <- colSums(cnt)

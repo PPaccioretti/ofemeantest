@@ -31,10 +31,10 @@ A list with components
 \description{
 Effective sample size (ESS) for the correlation between two spatially
 autocorrelated processes, as used by the modified *t*-test of Clifford,
-Richardson and Hemon (1989) with the correction of Dutilleul (1993). It is
-numerically identical to the `ESS` component returned by
-`SpatialPack::modified.ttest()`, re-implemented here in base R so that the
-package does not take on a new dependency.
+Richardson and Hemon (1989) with the correction of Dutilleul (1993). It
+reproduces the `ESS` component returned by `SpatialPack::modified.ttest()`
+(up to floating-point summation order, about 1e-10 relative), re-implemented
+here in base R so that the package does not take on a new dependency.
 }
 \details{
 All pairwise distances between the `n` locations are split into `nclass`
@@ -51,7 +51,11 @@ Passing the same vector as `x` and `y` gives the ESS of a single process
 The \eqn{n \times n} distance matrix is never materialised: locations are
 processed in blocks of `chunk_size` rows, so memory grows with
 `chunk_size * n` instead of `n^2`. The result does not depend on
-`chunk_size`.
+`chunk_size`. Time is \eqn{O(n^2)}, as in SpatialPack: all pairwise
+distances have to be classified once. The maximum distance that fixes
+the class width is taken from the convex hull, so only one pass over the
+pairs is made. When `x` and `y` are the same vector the work for `y` is
+skipped.
 
 Distance classes that contain no pair of locations get `NA` in `imoran`;
 they do not contribute to `ESS`.
