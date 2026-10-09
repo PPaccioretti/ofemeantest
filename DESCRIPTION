@@ -32,6 +32,7 @@ Suggests:
     ggplot2,
     knitr,
     rmarkdown,
+    SpatialPack,
     testthat (>= 3.0.0)
 Depends:
     R (>= 4.1.0)
